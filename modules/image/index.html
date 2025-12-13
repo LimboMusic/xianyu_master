@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      .container {
+        width: 300px;
+        height: 300px;
+        background-color: #f0f0f0;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .header {
+        width: 100%;
+        height: 50px;
+        background: rgb(203, 61, 59);
+        color: black;
+        display: flex;
+        font-weight: 700;
+        justify-content: center;
+        align-items: center;
+        padding: 5px;
+        box-sizing: border-box;
+      }
+
+      .header span {
+        font-weight: 700;
+        background: #ffed5c;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        box-sizing: border-box;
+        height: 100%;
+        border-radius: 20px;
+      }
+
+      .main {
+        display: flex;
+        position: relative;
+        flex-direction: row-reverse;
+      }
+
+      .img-main {
+        flex: 1;
+        width: 250px;
+        height: 250px;
+        position: absolute;
+        left: 0;
+        top: 0;
+      }
+
+      .image-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 100px;
+        height: 250px;
+        align-items: center;
+        background: rgb(203, 61, 59);
+        z-index: 2;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .text-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+        background: #ffed5c;
+        border-radius: 10px;
+        font-weight: 700;
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header class="header"><span>文本文本文本</span></header>
+      <main class="main">
+        <img class="img-main" src="./百度网盘.svg" />
+        <div class="image-container">
+          <img src="./百度网盘.svg" style="width: 50px; height: 50px" />
+          <div
+            style="
+              background-color: #fff;
+              border-radius: 10px;
+              padding: 10px;
+              width: 50px;
+              height: 50px;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              box-sizing: border-box;
+            "
+          >
+            <img src="./夸克网盘.svg" style="width: 40px; height: 40px" />
+          </div>
+          <div class="text-container">
+            <span>秒拍即发</span>
+            <span>无需等待</span>
+          </div>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

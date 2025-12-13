@@ -1,0 +1,19 @@
+{
+  "name": "automation-script",
+  "version": "1.0.0",
+  "description": "Automation script for virtual data project",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "dayjs": "^1.11.19",
+    "inquirer": "^13.0.2",
+    "playwright": "^1.57.0",
+    "xlsx": "^0.18.5"
+  }
+}
