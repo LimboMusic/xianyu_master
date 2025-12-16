@@ -13,6 +13,38 @@ export class Browser {
         this.page = await this.context.newPage();
     }
 
+    async connectToExistingBrowser(port = 9222) {
+        try {
+            // 先尝试 IPv4 地址，Windows 上更稳定
+            let wsEndpoint;
+            try {
+                this.browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
+            } catch (ipv4Error) {
+                // 如果 IPv4 失败，尝试 IPv6/localhost
+                console.log('IPv4 连接失败，尝试 localhost...');
+                this.browser = await chromium.connectOverCDP(`http://localhost:${port}`);
+            }
+            const contexts = this.browser.contexts();
+            if (contexts.length > 0) {
+                this.context = contexts[0];
+                const pages = this.context.pages();
+                if (pages.length > 0) {
+                    this.page = pages[0]; // 使用第一个已有的页面
+                } else {
+                    this.page = await this.context.newPage();
+                }
+            } else {
+                this.context = this.browser.contexts()[0] || await this.browser.newContext();
+                this.page = await this.context.newPage();
+            }
+            console.log('成功连接到现有浏览器');
+        } catch (error) {
+            console.error(`连接到现有浏览器失败: ${error.message}`);
+            console.log('将启动新浏览器...');
+            await this.launchBrowser();
+        }
+    }
+
     async openNewPage() {
         this.page = await this.context.newPage();
     }

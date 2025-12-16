@@ -54,9 +54,9 @@ async function getShopLinks(url, keyword) {
                 const userName = await getUserName(newPage);
                 const linkUrl = await newPage.url();
                 const id = await extractItemId(linkUrl || '');
-                console.log('Processed:', { id, "浏览量": reviewNumber, "想要人数": wantNumber, "链接": linkUrl, "名称": description.slice(0, 10), "标题": description, "图片": imageUrls, "用户名": userName });
-
-                result_list.push({ id, reviewNumber, wantNumber, linkUrl, imageUrls: imageUrls.join('\n'), userName, description });
+                const obj = { id, "浏览量": reviewNumber, "想要人数": wantNumber, "链接": linkUrl, "名称": description.slice(0, 10), "标题": description, "图片": imageUrls, "用户名": userName };
+                console.log('Processed:', obj);
+                result_list.push(obj);
 
                 // 确保新页面被正确关闭
                 try {
