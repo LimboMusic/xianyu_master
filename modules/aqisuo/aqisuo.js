@@ -6,6 +6,10 @@ const CATEGORY_CLASS_NAME = '.title___xowHU.h-24.cursor-pointer.text-14';
 const NEXT_BUTTON_CLASS_NAME = '.ant-card-body .bg-white.p-24.border-gray-light.-mx-24 button';
 const UPLOAD_IMAGE_CLASS_NAME = 'input[name="files"][type="file"][accept="image/*"]';
 const TITLE_INPUT_CLASS_NAME = 'input[placeholder="请输入宝贝标题"]';
+const DESCRIPTION_TEXTAREA_CLASS_NAME = 'textarea[placeholder="请输入宝贝描述"]';
+const ADDRESS_TEXT_CLASS_NAME = '.ant-space-item .text-14.text-gray-darkest.cursor-pointer';
+const PRICE_INPUT_CLASS_NAME = 'input[placeholder="¥0.00"]';
+
 
 export async function selectCategory(page) {
     const color = getRandomColor();
