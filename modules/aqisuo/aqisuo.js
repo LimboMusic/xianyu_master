@@ -1,5 +1,6 @@
 import { getRandomColor } from '../../utils/color.js';
 import sharp from 'sharp';
+import { sleep } from '../../utils/utils.js';
 
 
 const CATEGORY_CLASS_NAME = '.title___xowHU.h-24.cursor-pointer.text-14';
@@ -9,6 +10,12 @@ const TITLE_INPUT_CLASS_NAME = 'input[placeholder="请输入宝贝标题"]';
 const DESCRIPTION_TEXTAREA_CLASS_NAME = 'textarea[placeholder="请输入宝贝描述"]';
 const ADDRESS_TEXT_CLASS_NAME = '.ant-space-item .text-14.text-gray-darkest.cursor-pointer';
 const PRICE_INPUT_CLASS_NAME = 'input[placeholder="¥0.00"]';
+const INVENTORY_INPUT_CLASS_NAME = 'input[id="quantity"]';
+const TIMED_PULISH_RADIO_CLASS_NAME = 'input[id="timedPublish"]';
+const TIMED_PULISH_INPUT_CLASS_NAME = 'input[placeholder="请选择日期"]';
+const OUTER_ID_INPUT_CLASS_NAME = 'input#outerId';
+const SERVICE_CHECKBOX_CLASS_NAME = '.antFormItemMb-0 input[type="checkbox"]';
+const SUBMIT_BUTTON_CLASS_NAME = '.ant-space-item .ant-btn.css-1x0a6l1.css-var-r0.ant-btn-primary.ant-btn-color-primary.ant-btn-variant-solid';
 
 
 export async function selectCategory(page) {
@@ -107,5 +114,102 @@ export async function fillTitle(page, title) {
         return '';
     }
     await titleInputLocator.fill(title);
+    return;
+}
+
+export async function fillDescription(page, description) {
+    const descriptionTextareaLocator = page.locator(DESCRIPTION_TEXTAREA_CLASS_NAME).first();
+    if (await descriptionTextareaLocator.count() === 0) {
+        console.log('Description textarea not found', page.url());
+        return '';
+    }
+    await descriptionTextareaLocator.fill(description);
+    return;
+}
+
+export async function fillAddress(page) {
+    const addressTextLocator = page.locator(ADDRESS_TEXT_CLASS_NAME).first();
+    if (await addressTextLocator.count() === 0) {
+        console.log('Address text not found', page.url());
+        return '';
+    }
+    await addressTextLocator.click();
+    return;
+}
+
+export async function fillPrice(page, price = '1') {
+    const priceInputLocator = page.locator(PRICE_INPUT_CLASS_NAME).first();
+    if (await priceInputLocator.count() === 0) {
+        console.log('Price input not found', page.url());
+        return '';
+    }
+    await priceInputLocator.fill(price);
+    return;
+}
+
+export async function fillInventory(page, inventory='9999') {
+    const inventoryInputLocator = page.locator(INVENTORY_INPUT_CLASS_NAME).first();
+    if (await inventoryInputLocator.count() === 0) {
+        console.log('Inventory input not found', page.url());
+        return '';
+    }
+    await inventoryInputLocator.fill(inventory);
+    return;
+}
+
+export async function fillOuterId(page, outerId) {
+    const outerIdInputLocator = page.locator(OUTER_ID_INPUT_CLASS_NAME).first();
+    if (await outerIdInputLocator.count() === 0) {
+        console.log('Outer id input not found', page.url());
+        return '';
+    }
+    await outerIdInputLocator.fill(outerId);
+    return;
+}
+
+export async function clickServiceCheckboxs(page) {
+    const serviceCheckboxLocators = await page.locator(SERVICE_CHECKBOX_CLASS_NAME).all();
+    console.log(`Found ${serviceCheckboxLocators.length} service checkboxes`);
+    
+    if (serviceCheckboxLocators.length === 0) {
+        console.log('No service checkboxes found', page.url());
+        return;
+    }
+    
+    for (const serviceCheckboxLocator of serviceCheckboxLocators) {
+        try {
+            await serviceCheckboxLocator.click();
+            await sleep(200); // 短暂延迟，避免点击过快
+        } catch (error) {
+            console.log(`Warning: Failed to click service checkbox: ${error.message}`);
+        }
+    }
+    return;
+}
+
+export async function clickTimedPublishRadio(page,date) {
+    const timedPublishRadioLocator = await page.locator(TIMED_PULISH_RADIO_CLASS_NAME).first();
+    if (await timedPublishRadioLocator.count() === 0) {
+        console.log('Timed publish radio not found', page.url());
+        return '';
+    }
+    await timedPublishRadioLocator.click();
+    await sleep(1000);
+    const timedPublishInputLocator = page.locator(TIMED_PULISH_INPUT_CLASS_NAME).first();
+    if (await timedPublishInputLocator.count() === 0) {
+        console.log('Timed publish input not found', page.url());
+        return '';
+    }
+    await timedPublishInputLocator.fill(date);
+    return;
+}
+
+export async function clickSubmitButton(page) {
+    const submitButtonLocator = page.locator(SUBMIT_BUTTON_CLASS_NAME).first();
+    if (await submitButtonLocator.count() === 0) {
+        console.log('Submit button not found', page.url());
+        return '';
+    }
+    await submitButtonLocator.click();
     return;
 }

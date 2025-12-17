@@ -3,17 +3,82 @@ import { sleep } from '../utils/utils.js';
 import { exportToExcelFile } from '../utils/file.js';
 import dayjs from 'dayjs';
 import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { Browser } from '../utils/browser.js';
 import { gotoShopPage, getReviewAndWantNumber, getLinkDescription, getImageUrls, getUserName, gotoNextPage, extractItemId } from '../modules/shop_data/shop_data.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const result_list = [];
 const browser = new Browser();
+
+/**
+ * 确保输出目录存在，支持多种创建方式
+ * @param {string} relativePath - 相对路径，如 'output/2025-12-17/关键词数据'
+ * @param {string} baseDir - 基础目录，默认为项目根目录
+ * @returns {string} 创建的目录的绝对路径
+ */
+function ensureOutputDir(relativePath, baseDir = path.join(__dirname, '..')) {
+    // 方法1: 尝试使用相对路径创建
+    let outputDir = relativePath;
+    try {
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+        }
+        return path.resolve(outputDir);
+    } catch (error) {
+        // 方法2: 如果失败，使用绝对路径重试
+        try {
+            outputDir = path.join(baseDir, relativePath);
+            if (!fs.existsSync(outputDir)) {
+                fs.mkdirSync(outputDir, { recursive: true });
+            }
+            return outputDir;
+        } catch (retryError) {
+            // 方法3: 如果还是失败，尝试逐级创建
+            try {
+                const parts = path.join(baseDir, relativePath).split(path.sep);
+                let currentPath = '';
+                for (const part of parts) {
+                    if (part) {
+                        currentPath = currentPath ? path.join(currentPath, part) : part;
+                        if (!fs.existsSync(currentPath)) {
+                            fs.mkdirSync(currentPath);
+                        }
+                    }
+                }
+                return currentPath;
+            } catch (fallbackError) {
+                console.warn(`Warning: Failed to create directory ${relativePath}: ${fallbackError.message}`);
+                // 返回相对路径，让 exportToExcelFile 尝试创建
+                return relativePath;
+            }
+        }
+    }
+}
+
+// 在顶层创建输出目录（现在应该可以正常工作了）
+// 如果遇到段错误，可以注释掉这行，目录会在函数内部创建
 const output_dir = `output/${dayjs().format('YYYY-MM-DD')}/关键词数据`;
-fs.mkdirSync(output_dir, { recursive: true });
+let output_dir_absolute;
+try {
+    output_dir_absolute = ensureOutputDir(output_dir);
+} catch (dirError) {
+    // 如果顶层创建失败，会在函数内部创建
+    console.warn(`Warning: Failed to create directory at top level: ${dirError.message}`);
+    output_dir_absolute = output_dir;
+}
 
 async function getShopLinks(url, keyword) {
     try {
+        // 确保输出目录存在（如果顶层创建失败，这里会创建）
+        const output_dir_local = ensureOutputDir(output_dir);
+        
+        console.log('Launching browser...');
         await browser.launchBrowser();
+        console.log('Browser launched successfully');
         let count = 0;
         let page
         let retryCount = 0;
@@ -81,7 +146,8 @@ async function getShopLinks(url, keyword) {
 
                 // 定期保存进度
                 if (result_list.length > 0 && result_list.length % 5 === 0) {
-                    await exportToExcelFile(result_list, `${output_dir}/${keyword.trim()}_${dayjs().format('YYYY-MM-DD')}.xlsx`);
+                    const filename = path.join(output_dir_local, `${keyword.trim()}_${dayjs().format('YYYY-MM-DD')}.xlsx`);
+                    await exportToExcelFile(result_list, filename);
                 }
 
                 if (count <= 2) {
@@ -114,20 +180,32 @@ async function getShopLinks(url, keyword) {
 
         // 最终保存结果
         if (result_list.length > 0) {
-            await exportToExcelFile(result_list, `${output_dir}/${keyword.trim()}_${dayjs().format('YYYY-MM-DD')}.xlsx`, id);
+            const filename = path.join(output_dir_local, `${keyword.trim()}_${dayjs().format('YYYY-MM-DD')}.xlsx`);
+            await exportToExcelFile(result_list, filename);
         }
 
-        browser.closeBrowser();
+        await browser.closeBrowser();
         return result_list;
 
     } catch (error) {
-        console.log(`Error in getShopLinks: ${error.message}`);
+        console.error(`Error in getShopLinks: ${error.message}`);
+        console.error(error.stack);
         try {
-            if (browser.browser) {
+            if (browser && browser.browser) {
                 await browser.closeBrowser();
             }
         } catch (closeError) {
-            console.log(`Error closing browser: ${closeError.message}`);
+            console.error(`Error closing browser: ${closeError.message}`);
+        }
+        // 保存已处理的结果
+        if (result_list.length > 0) {
+            try {
+                const final_output_dir = output_dir_absolute || ensureOutputDir(output_dir);
+                const filename = path.join(final_output_dir, `${keyword.trim()}_${dayjs().format('YYYY-MM-DD')}.xlsx`);
+                await exportToExcelFile(result_list, filename);
+            } catch (saveError) {
+                console.error(`Error saving results: ${saveError.message}`);
+            }
         }
         return result_list; // 返回已处理的结果
     }
