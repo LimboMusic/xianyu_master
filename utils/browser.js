@@ -8,9 +8,27 @@ export class Browser {
     }
 
     async launchBrowser() {
-        this.browser = await chromium.launch({ headless: false });
-        this.context = await this.browser.newContext();
-        this.page = await this.context.newPage();
+        try {
+            // 添加启动选项，避免段错误
+            // Windows 上通常不需要 --no-sandbox，但添加超时和错误处理
+            const launchOptions = { 
+                headless: false,
+                timeout: 60000 // 60秒超时
+            };
+            
+            // 只在非 Windows 系统上添加 sandbox 参数
+            if (process.platform !== 'win32') {
+                launchOptions.args = ['--no-sandbox', '--disable-setuid-sandbox'];
+            }
+            
+            this.browser = await chromium.launch(launchOptions);
+            this.context = await this.browser.newContext();
+            this.page = await this.context.newPage();
+        } catch (error) {
+            console.error(`Browser launch error: ${error.message}`);
+            console.error(`Error stack: ${error.stack}`);
+            throw error;
+        }
     }
 
     async connectToExistingBrowser(port = 9222) {
@@ -167,8 +185,8 @@ export class Browser {
 
                 await this.page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
                 await this.page.waitForLoadState('networkidle', { timeout: 30000 });
-                // 重新计算元素数量
-                console.log(`Page recreated successfully. New count: ${count}`);
+                // 页面重新创建成功
+                console.log(`Page recreated successfully.`);
             } catch (recreateError) {
                 console.log(`Failed to recreate page: ${recreateError.message}`);
                 throw recreateError;

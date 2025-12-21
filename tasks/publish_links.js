@@ -2,30 +2,24 @@ import { Browser } from '../utils/browser.js';
 import { selectCategory, clickNextButton, uploadImage, fillTitle, fillDescription, fillAddress, fillPrice, fillInventory, clickTimedPublishRadio, fillOuterId, clickServiceCheckboxs, clickSubmitButton } from '../modules/aqisuo/aqisuo.js';
 import { sleep, waitForUserInput } from '../utils/utils.js';
 import dayjs from 'dayjs';
+import { 
+    getNextPublishTime, 
+    recordPublish, 
+    getTodayCount, 
+    getTodayRemainingCount, 
+    getTodayRecords,
+    getLastPublishTime,
+} from '../store/index.js';
+import fs from 'fs';
+import * as XLSX from 'xlsx';
 
+const data = fs.readFileSync('input/汇总_资源.xlsx');
+const workbook = XLSX.read(data, { type: 'buffer' });
+const sheetName = workbook.SheetNames[0];
+const sheet = workbook.Sheets[sheetName];
+const data_list = XLSX.utils.sheet_to_json(sheet, { header: true }).filter(item=>item['已经定时发布']!=='是');
+console.log('data_list', data_list);
 
-const str = `（秒发货）D01 精选999套高级PPT模板｜屎盆子镶金边｜国赛金奖｜设计感｜莫兰迪
-
-——★24小时自动发货★——
-
-精选999套精选ppt高端模板 古风模板
-包含但不限于：
-【莫兰迪风】➕【设计感】➕【轻奢大理石】➕【手绘风】➕【极简禁欲】➕【文艺旅行】➕【纯粹简致】➕【国潮风】➕【中国风】➕【北欧风】➕【ins风】➕【欧美风格】➕【高级极简】➕【日系】➕【屎盆子镶金边】附赠【精选合集】
-工作总结｜工作汇报｜数据分析｜市场调研｜答辩｜授课｜竞赛｜大学生｜教师｜
-[火]每套风格的模版都是我精心挑选出来的～
-
-[火]拍下后赠送 "山海大气"工作总结ppt模板
-
-[火]每款精选质量高，适用于任何场合～
-
-[火]每个风格都有单独归类文档编号～
-
-[火]随时可拍，随时秒发货，着急的可以提前下～
-
-[号外]点击“直接刀成”无需等待，自动秒发
-
-网盘发货
-`
 const browser = new Browser();
 
 // 设置为 true 表示连接到手动打开的浏览器，false 表示启动新浏览器
@@ -42,8 +36,33 @@ const USE_EXISTING_BROWSER = true; // 修改这个变量来选择模式
 // - C:\Users\<用户名>\AppData\Local\Google\Chrome\Application\chrome.exe
 //
 // 验证浏览器是否启动：访问 http://127.0.0.1:9222/json/version 查看是否返回数据
+//
+// https://aldsidle.agiso.com/#/goodsManage/goodsList/goodsRelease
 
-async function publishLinks() {
+async function publishLinks(data) {
+    console.log("publishLink=====>", data);
+    const outerId = data['编码']
+    const title = data['标题']
+    const description = data['标题']
+    const image = data['图片']
+    // 获取下一个发布时间（如果今天已满5次，会自动安排到明天）
+    const nextPublishInfo = getNextPublishTime();
+    const scheduledTime = nextPublishInfo.time;
+    const scheduledDate = nextPublishInfo.date;
+    const today = dayjs().format('YYYY-MM-DD');
+    const isToday = scheduledDate === today;
+    
+    console.log(`\n📅 计划发布时间: ${scheduledTime}`);
+    console.log(`📊 今天已安排: ${getTodayCount()}/5，剩余: ${getTodayRemainingCount()} 次`);
+    
+    // 如果今天已满5次，新发布的内容会自动安排到明天
+    if (!isToday) {
+        console.log(`ℹ️  今天已安排满5次，本次发布将安排到: ${scheduledDate}`);
+    }
+    
+    // 记录实际开始时间
+    const actualStartTime = dayjs().format('YYYY-MM-DD HH:mm:ss');
+    
     if (USE_EXISTING_BROWSER) {
         await browser.connectToExistingBrowser();
     } else {
@@ -55,39 +74,131 @@ async function publishLinks() {
 
     await sleep(1000);
     // 等待关闭按钮出现并点击
-    try {
-        await page.waitForSelector('span[aria-label="close-circle"]', { timeout: 2000 });
-        await page.locator('span[aria-label="close-circle"]').first().click();
-    } catch (error) {
-        console.log(`Warning: Close button not found or failed to click: ${error.message}`);
-    }
+    // try {
+    //     await page.waitForSelector('span[aria-label="close-circle"]', { timeout: 2000 });
+    //     await page.locator('span[aria-label="close-circle"]').first().click();
+    // } catch (error) {
+    //     console.log(`Warning: Close button not found or failed to click: ${error.message}`);
+    // }
     await sleep(1000);
     await selectCategory(page);
     await sleep(2000)
     await clickNextButton(page);
     await sleep(2000)
-    await uploadImage(page, 'img.alicdn.com/bao/uploaded/i1/O1CN010Z7GQE1gSAmewYzmH_!!4611686018427384892-53-fleamarket.heic_790x10000Q90.jpg_.webp');
-    await fillTitle(page,str.slice(0, 30));
-    await fillDescription(page, str);
+    await uploadImage(page, image);
+    await sleep(1000)
+    await fillTitle(page,title.slice(0, 30));
+    await sleep(500)
+    await fillDescription(page, description);
+    await sleep(500)
     await fillAddress(page);
+    await sleep(500)
     await fillPrice(page);
+    await sleep(500)
     await fillInventory(page);
-    await clickTimedPublishRadio(page, dayjs().add(1, 'day').format('YYYY-MM-DD HH:mm:ss'));
-    await fillOuterId(page, '1');
+    await sleep(1000)
+    // 使用计算出的定时发布时间
+    await clickTimedPublishRadio(page, scheduledTime);
+    await sleep(1000)
+    await fillOuterId(page, outerId);
+    await sleep(1000)
     await clickServiceCheckboxs(page);
+    await sleep(1000)
     await clickSubmitButton(page);
-    await sleep(2000);
+    await sleep(1000)
     try{
         await page.waitForSelector('.ant-modal-footer button', { timeout: 5000 });
         await page.locator('.ant-modal-footer button').last().click();
     } catch (error) {
         console.log(`Warning: Close button not found or failed to click: ${error.message}`);
     }
-    // await page.waitForSelector('.ant-modal-close', { timeout: 5000 });
-    // await page.locator('.ant-modal-close').first().click();
+    await sleep(3000)
+    
+    // 记录发布成功
+    const actualEndTime = dayjs().format('YYYY-MM-DD HH:mm:ss');
+    recordPublish({
+        actualTime: actualEndTime,
+        scheduledTime: scheduledTime
+    });
+    
+    console.log(`✓ 发布成功！`);
+    console.log(`   实际发布时间: ${actualEndTime}`);
+    console.log(`   定时发布时间: ${scheduledTime}`);
+    console.log(`   今天已发布: ${getTodayCount()}/5`);
+    
+    return true;
 }
 
-for(let i = 0; i < 10; i++) {
-    await publishLinks();
-    await sleep(2000);
+async function runPublishLoop() {
+    console.log('=== 开始发布任务 ===');
+    
+    // 显示当前状态
+    const lastPublishTime = getLastPublishTime();
+    if (lastPublishTime) {
+        console.log(`最后一次发布时间: ${lastPublishTime}`);
+    } else {
+        console.log('这是第一次发布');
+    }
+    
+    console.log(`今天已发布: ${getTodayCount()}/5`);
+    console.log(`剩余次数: ${getTodayRemainingCount()} 次\n`);
+    
+    // 显示今天的发布记录
+    const todayRecords = getTodayRecords();
+    if (todayRecords.length > 0) {
+        console.log('今天的发布记录:');
+        todayRecords.forEach((record, index) => {
+            console.log(`  ${index + 1}. 定时: ${record.scheduledTime} | 实际: ${record.actualTime}`);
+        });
+        console.log('');
+    }
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (let i = 0; i < data_list.length; i++) {
+        try {
+            const item = data_list[i];
+            // 继续运行，getNextPublishTime() 会自动将超过5次的部分安排到明天
+            const success = await publishLinks(item);
+            if (success) {
+                successCount++;
+            } else {
+                failCount++;
+            }
+            
+            // 等待一段时间再继续
+            await sleep(2000);
+            
+        } catch (error) {
+            console.error(`✗ 发布失败: ${error.message}`);
+            console.error(error.stack);
+            failCount++;
+            await sleep(3000);
+        }
+    }
+    
+    console.log('\n=== 发布任务完成 ===');
+    console.log(`成功发布: ${successCount} 次`);
+    console.log(`失败: ${failCount} 次`);
+    console.log(`今天已安排: ${getTodayCount()}/5 次`);
+    
+    // 显示下次可发布时间
+    const nextPublishInfo = getNextPublishTime();
+    const nextDate = dayjs(nextPublishInfo.time).format('YYYY-MM-DD');
+    const today = dayjs().format('YYYY-MM-DD');
+    
+    if (nextDate === today) {
+        console.log(`\n下次可发布时间: ${nextPublishInfo.time} (今天)`);
+    } else {
+        console.log(`\n下次可发布时间: ${nextPublishInfo.time} (${nextDate})`);
+    }
 }
+
+
+// 运行发布循环，可以指定要发布的数量
+// 例如：runPublishLoop(10) 表示要发布10条
+runPublishLoop(5).catch(error => {
+    console.error('程序执行出错:', error);
+    process.exit(1);
+});

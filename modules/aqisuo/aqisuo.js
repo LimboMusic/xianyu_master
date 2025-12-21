@@ -57,7 +57,7 @@ export async function uploadImage(page, imageUrl = null) {
             console.log('Upload image input not found', page.url());
             return '';
         }
-        await uploadImageLocator.click();
+        // await uploadImageLocator.click();
         return;
     }
 
@@ -94,7 +94,19 @@ export async function uploadImage(page, imageUrl = null) {
 
         // 将 Buffer 数据上传到文件输入框
         // setInputFiles 支持传入一个对象数组，包含 buffer, name, mimeType
-        await page.locator(UPLOAD_IMAGE_CLASS_NAME).setInputFiles({
+        // 注意：setInputFiles 不需要元素可见，但需要元素存在且可交互
+        const uploadInputLocator = page.locator(UPLOAD_IMAGE_CLASS_NAME).first();
+        
+        // 等待元素存在（不需要可见，但需要存在于DOM中）
+        try {
+            await uploadInputLocator.waitFor({ state: 'attached', timeout: 10000 });
+        } catch (error) {
+            throw new Error(`文件上传输入框未找到: ${error.message}`);
+        }
+        
+        // 使用 setInputFiles 直接设置文件，不需要点击
+        // setInputFiles 可以操作隐藏的文件输入框
+        await uploadInputLocator.setInputFiles({
             name: `downloaded-image.${extension}`, // 模拟的文件名
             mimeType: mimeType,                     // 文件类型
             buffer: imageBuffer                      // 二进制数据
@@ -163,7 +175,7 @@ export async function fillOuterId(page, outerId) {
         console.log('Outer id input not found', page.url());
         return '';
     }
-    await outerIdInputLocator.fill(outerId);
+    await outerIdInputLocator.fill(String(outerId));
     return;
 }
 

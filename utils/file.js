@@ -23,7 +23,7 @@ export async function exportToExcelFile(data, filename, id = 'linkUrl') {
             const uniqueMap = new Map();
             finalData.forEach(item => {
                 if (item[id]) {
-                    uniqueMap.set(item.linkUrl, item);
+                    uniqueMap.set(item[id], item);
                 } else {
                     // 如果没有linkUrl，使用完整对象作为key（不太可能去重）
                     uniqueMap.set(JSON.stringify(item), item);
