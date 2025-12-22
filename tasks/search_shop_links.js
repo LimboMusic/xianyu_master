@@ -52,7 +52,7 @@ async function getShopLinks(url, shop_name) {
           const remainingCount = await page
             .locator('.cardWarp--dZodM57A:not([id="selected"])')
             .count();
-          if (remainingCount === 0) {
+          if (remainingCount === 1) {
             console.log("No more elements to process");
             break;
           } else {
@@ -78,6 +78,8 @@ async function getShopLinks(url, shop_name) {
           await sleep(2000);
           continue;
         }
+
+        await sleep(1000);
 
         const { reviewNumber, wantNumber } = await getReviewAndWantNumber(
           newPage

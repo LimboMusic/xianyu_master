@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import { exportToExcelFile } from '../utils/file.js';
 import fs from 'fs';
 import { Browser } from '../utils/browser.js';
+import { sleep } from '../utils/utils.js';
 
 const rsult_list = [];
 const browser = new Browser();
@@ -16,8 +17,9 @@ async function getShopData(url) {
   const page = browser.page;
   await page.goto(url);
   await page.waitForLoadState('networkidle');
-
+  await sleep(1000)
   const newPage = await gotoShopPage(page);
+  await sleep(1000)
   const introText = await getIntroText(newPage);
   const salesMatch = introText.match(/卖出(\d+)件宝贝/);
   let salesCount = 0;
@@ -59,8 +61,8 @@ for (const row of data) {
     rsult_list.push(obj);
   }
   if (count % 10 === 0 && count !== 0) {
-    await exportToExcelFile(rsult_list, `${output_dir}/店铺每日售出数据_${dayjs().format('YYYY-MM-DD')}.xlsx`);
+    await exportToExcelFile(rsult_list, `${output_dir}/店铺每日售出数据_${dayjs().format('YYYY-MM-DD')}.xlsx`,'店铺名');
   }
 }
 
-await exportToExcelFile(rsult_list, `${output_dir}/店铺每日数据_${dayjs().format('YYYY-MM-DD')}.xlsx`);
+await exportToExcelFile(rsult_list, `${output_dir}/店铺每日数据_${dayjs().format('YYYY-MM-DD')}.xlsx`,'店铺名');

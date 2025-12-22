@@ -112,7 +112,7 @@ async function publishLinks(data) {
     } catch (error) {
         console.log(`Warning: Close button not found or failed to click: ${error.message}`);
     }
-    await sleep(3000)
+    await sleep(5000)
     
     // 记录发布成功
     const actualEndTime = dayjs().format('YYYY-MM-DD HH:mm:ss');

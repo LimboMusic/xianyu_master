@@ -8,6 +8,8 @@ const DESCRIPTION_CLASS_NAME = "span.desc--GaIUKUQY";
 const USER_NAME_CLASS_NAME = ".item-user-info-nick--rtpDhkmQ";
 const IMAGE_URL_CLASS_NAME = "div[data-index]:not([data-index='-1']) .carouselItem--jwFj0Jpa img";
 const VIDEO_URL_CLASS_NAME = ".react-player--eSd7xhPi source";
+const CHAT_BUTTON_CLASS_NAME = "a.want--ecByv3Sr";
+const CHAT_BOX_CLASS_NAME = "textarea[placeholder='请输入消息，按Enter键发送或点击发送按钮发送']";
 
 async function gotoShopPage(page, className = FIRST_CARD_CLASS_NAME) {
   const elementLocator = page.locator(className).first();
@@ -95,6 +97,7 @@ async function getIntroText(page) {
 async function getReviewAndWantNumber(page) {
   const color = getRandomColor();
   const wantLocator = page.locator(WANT_CLASS_NAME).first();
+  await wantLocator.waitFor({ timeout: 10000 });
 
   // 如果没找到元素就跳过背景色设置
   if ((await wantLocator.count()) > 0) {
@@ -214,6 +217,27 @@ async function extractItemId(url) {
   }
 }
 
+async function goToChatPage(page) {
+  const chatButtonLocator = page.locator(CHAT_BUTTON_CLASS_NAME).first();
+  if ((await chatButtonLocator.count()) > 0) {
+    const [childPage] = await Promise.all([
+      page.waitForEvent("popup"),
+      chatButtonLocator.click(),
+    ]);
+    await childPage.waitForLoadState('networkidle');
+    return childPage;
+  }s
+  return null;
+}
+
+async function sendMessage(page, message = 'zhi顶，谢谢啦') {
+  const chatBoxLocator = page.locator(CHAT_BOX_CLASS_NAME).first();
+  if ((await chatBoxLocator.count()) > 0) {
+    await chatBoxLocator.fill(message);
+    await chatBoxLocator.press("Enter");
+  }
+}
+
 export {
   gotoShopPage,
   getIntroText,
@@ -223,4 +247,6 @@ export {
   getImageUrls,
   gotoNextPage,
   extractItemId,
+  goToChatPage,
+  sendMessage
 };
