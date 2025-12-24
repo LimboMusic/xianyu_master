@@ -10,6 +10,7 @@ const IMAGE_URL_CLASS_NAME = "div[data-index]:not([data-index='-1']) .carouselIt
 const VIDEO_URL_CLASS_NAME = ".react-player--eSd7xhPi source";
 const CHAT_BUTTON_CLASS_NAME = "a.want--ecByv3Sr";
 const CHAT_BOX_CLASS_NAME = "textarea[placeholder='请输入消息，按Enter键发送或点击发送按钮发送']";
+const CHAT_RED_POINT_CLASS_NAME = ".conversation-item--JReyg97P .ant-scroll-number.ant-badge-count.ant-badge-count-sm";
 
 async function gotoShopPage(page, className = FIRST_CARD_CLASS_NAME) {
   const elementLocator = page.locator(className).first();
@@ -185,7 +186,7 @@ async function getImageUrls(page, is_multiple = true) {
         if (src) mediaUrlList.push(src);
       }
 
-      if(is_multiple === false) {
+      if (is_multiple === false) {
         return mediaUrlList[0];
       }
     }
@@ -226,16 +227,27 @@ async function goToChatPage(page) {
     ]);
     await childPage.waitForLoadState('networkidle');
     return childPage;
-  }s
+  } s
   return null;
 }
 
 async function sendMessage(page, message = 'zhi顶，谢谢啦') {
   const chatBoxLocator = page.locator(CHAT_BOX_CLASS_NAME).first();
-  if ((await chatBoxLocator.count()) > 0) {
-    await chatBoxLocator.fill(message);
-    await chatBoxLocator.press("Enter");
+  if ((await chatBoxLocator.count({ timeout: 5000 })) > 0) {
+    await chatBoxLocator.fill(message, { timeout: 5000 });
+    await chatBoxLocator.press("Enter", { timeout: 5000 });
+  } else {
+    console.log("Chat box not found");
   }
+}
+
+async function clickChatRedPoint(page) {
+  const chatRedPointCount = page.locator(CHAT_RED_POINT_CLASS_NAME).count();
+  const chatRedPointLocator = page.locator(CHAT_RED_POINT_CLASS_NAME).first();
+  if ((await chatRedPointLocator.count()) > 0) {
+    await chatRedPointLocator.click();;
+  }
+  return chatRedPointCount;
 }
 
 export {
@@ -248,5 +260,6 @@ export {
   gotoNextPage,
   extractItemId,
   goToChatPage,
-  sendMessage
+  sendMessage,
+  clickChatRedPoint,
 };

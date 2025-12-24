@@ -12,8 +12,8 @@ import {
   getImageUrls
 } from "../modules/shop_data/shop_data.js";
 
-const url = 'https://m.tb.cn/h.70Yqj9C?tk=kltKfJ6ftO2'
-const shop_name = '解忧杂货铺'
+const url = 'https://m.tb.cn/h.74NxfEu?tk=eg30fC55tdj'
+const shop_name = 'BC素材铺'
 
 const result_list = [];
 const browser = new Browser();
@@ -211,13 +211,13 @@ async function getShopLinks(url, shop_name) {
   }
 }
 
-const fileBuffer = fs.readFileSync("input/汇总_店铺.xlsx");
-const workbook = XLSX.read(fileBuffer, { type: "buffer" });
-const sheetName = workbook.SheetNames[0];
-const sheet = workbook.Sheets[sheetName];
-const data = XLSX.utils.sheet_to_json(sheet, { header: true });
+// const fileBuffer = fs.readFileSync("input/汇总_店铺.xlsx");
+// const workbook = XLSX.read(fileBuffer, { type: "buffer" });
+// const sheetName = workbook.SheetNames[0];
+// const sheet = workbook.Sheets[sheetName];
+// const data = XLSX.utils.sheet_to_json(sheet, { header: true });
 
-console.log("data", data);
+// console.log("data", data);
 
 // for (const row of data) {
 //     const url = row['店铺网址'];

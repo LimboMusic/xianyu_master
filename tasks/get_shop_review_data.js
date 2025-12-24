@@ -65,4 +65,4 @@ for (const row of data) {
   }
 }
 
-await exportToExcelFile(rsult_list, `${output_dir}/店铺每日数据_${dayjs().format('YYYY-MM-DD')}.xlsx`,'店铺名');
+await exportToExcelFile(rsult_list, `${output_dir}/店铺每日售出数据_${dayjs().format('YYYY-MM-DD')}.xlsx`,'店铺名');
