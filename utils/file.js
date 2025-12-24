@@ -60,3 +60,59 @@ export async function readExcelFile(filename) {
     const data = XLSX.utils.sheet_to_json(sheet, { header: true });
     return data;
 }
+
+/*
+    更新 Excel 文件中指定行的某个列的值
+    filename: Excel 文件路径
+    rowIndex: 行索引（从 0 开始，0 是表头，1 是第一条数据）
+    columnName: 列名
+    value: 要设置的值
+*/
+export async function updateExcelCell(filename, rowIndex, columnName, value) {
+    try {
+        const fileBuffer = fs.readFileSync(filename);
+        const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        
+        // 将 sheet 转换为 JSON 数组
+        const data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        
+        // 找到列名对应的列索引
+        const headerRow = data[0];
+        const columnIndex = headerRow.findIndex(col => col === columnName || col === columnName.trim());
+        
+        if (columnIndex === -1) {
+            console.log(`Column "${columnName}" not found in Excel file`);
+            return false;
+        }
+        
+        // 更新指定行的值（rowIndex + 1 因为第一行是表头）
+        const targetRowIndex = rowIndex + 1;
+        if (targetRowIndex >= data.length) {
+            // 如果行不存在，需要扩展数组
+            while (data.length <= targetRowIndex) {
+                data.push([]);
+            }
+        }
+        
+        // 确保该行有足够的列
+        while (data[targetRowIndex].length <= columnIndex) {
+            data[targetRowIndex].push('');
+        }
+        
+        data[targetRowIndex][columnIndex] = value;
+        
+        // 将更新后的数据写回 sheet
+        const newSheet = XLSX.utils.aoa_to_sheet(data);
+        workbook.Sheets[sheetName] = newSheet;
+        
+        // 保存文件
+        XLSX.writeFile(workbook, filename);
+        console.log(`Updated Excel: row ${targetRowIndex}, column "${columnName}" = "${value}"`);
+        return true;
+    } catch (error) {
+        console.error(`Failed to update Excel cell: ${error.message}`);
+        return false;
+    }
+}

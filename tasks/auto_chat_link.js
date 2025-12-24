@@ -2,12 +2,14 @@ import { Browser } from "../utils/browser.js";
 import { goToChatPage, sendMessage } from "../modules/shop_data/shop_data.js";
 import { sleep } from "../utils/utils.js";
 import { extractLikeLinks } from "../utils/extract_like_links.js";
+import { updateExcelCell } from "../utils/file.js";
+import path from "path";
 
 
 const USE_EXISTING_BROWSER = true;
 
-async function autoChatLink(links, intervalMs = 3000) {
-  const linkList = Array.isArray(links) ? links : [links];
+async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
+  const itemList = Array.isArray(items) ? items : [items];
 
   const browser = new Browser();
   if (USE_EXISTING_BROWSER) {
@@ -16,8 +18,11 @@ async function autoChatLink(links, intervalMs = 3000) {
     await browser.launchBrowser();
   }
 
-  for (const link of linkList) {
-    console.log(`Start processing link: ${link}`);
+  for (const item of itemList) {
+    const link = item.linkUrl;
+    const rowIndex = item.rowIndex;
+    
+    console.log(`Start processing link: ${link} (row ${rowIndex + 2})`);
 
     let page = null;
     try {
@@ -49,12 +54,25 @@ async function autoChatLink(links, intervalMs = 3000) {
 
     await sleep(intervalMs);
 
+    let sendSuccess = false;
     try {
       await sendMessage(chatPage);
+      sendSuccess = true;
+      console.log(`Message sent successfully for link: ${link}`);
     } catch (error) {
       console.log(`Failed to send message for link: ${link}`);
       console.log(`Error: ${error.message}`);
     }
+
+    // 如果发送成功，更新 Excel 中的"是否发送"列
+    // if (sendSuccess && excelFilePath && rowIndex !== undefined) {
+    //   try {
+    //     await updateExcelCell(excelFilePath, rowIndex, "是否发送", "是");
+    //     console.log(`Updated Excel: row ${rowIndex + 2}, "是否发送" = "是"`);
+    //   } catch (error) {
+    //     console.log(`Failed to update Excel: ${error.message}`);
+    //   }
+    // }
 
     try {
       await chatPage.close();
@@ -80,5 +98,5 @@ async function autoChatLink(links, intervalMs = 3000) {
 
 
 const res = await extractLikeLinks();
-const links = res.map(item => item.linkUrl);
-await autoChatLink(links, 3000);
+const excelFilePath = path.resolve("input", "点赞链接.xlsx");
+await autoChatLink(res, excelFilePath, 3000);

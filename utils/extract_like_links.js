@@ -31,7 +31,8 @@ export async function extractLikeLinks() {
     const url = extractUrlFromText(text);
 
     return {
-      index: index + 1,
+      rowIndex: index, // Excel 数据行索引（从 0 开始，对应 Excel 第 2 行，因为第 1 行是表头）
+      index: index + 1, // 显示用的序号（从 1 开始）
       rawText: text,
       linkUrl: url,
     };
