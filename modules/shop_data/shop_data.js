@@ -226,9 +226,9 @@ async function goToChatPage(page) {
       page.waitForEvent("popup"),
       chatButtonLocator.click(),
     ]);
-    await childPage.waitForLoadState('networkidle');
+    await sleep(2000);
     return childPage;
-  } s
+  } 
   return null;
 }
 
