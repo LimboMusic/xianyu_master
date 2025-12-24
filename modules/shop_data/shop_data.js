@@ -11,6 +11,7 @@ const VIDEO_URL_CLASS_NAME = ".react-player--eSd7xhPi source";
 const CHAT_BUTTON_CLASS_NAME = "a.want--ecByv3Sr";
 const CHAT_BOX_CLASS_NAME = "textarea[placeholder='请输入消息，按Enter键发送或点击发送按钮发送']";
 const CHAT_RED_POINT_CLASS_NAME = ".conversation-item--JReyg97P .ant-scroll-number.ant-badge-count.ant-badge-count-sm";
+const CHAT_HEAD_TEXT_CLASS_NAME = ".container--dgZTBkgv";
 
 async function gotoShopPage(page, className = FIRST_CARD_CLASS_NAME) {
   const elementLocator = page.locator(className).first();
@@ -250,6 +251,16 @@ async function clickChatRedPoint(page) {
   return chatRedPointCount;
 }
 
+async function getChatHeadText(page) {
+  const chatHeadTextLocator = page.locator(CHAT_HEAD_TEXT_CLASS_NAME).first();
+  try {
+    await chatHeadTextLocator.waitFor({ timeout: 10000 });
+    return await chatHeadTextLocator.innerText();
+  } catch (error) {
+    return "";
+  }
+}
+
 export {
   gotoShopPage,
   getIntroText,
@@ -262,4 +273,5 @@ export {
   goToChatPage,
   sendMessage,
   clickChatRedPoint,
+  getChatHeadText,
 };
