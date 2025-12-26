@@ -6,14 +6,20 @@ const CHAT_HEAD_TEXT_CLASS_NAME = ".container--dgZTBkgv";
 const MESSAGE_CLASS_NAME = ".ant-list-items >div";
 const MESSAGE_LIST_LENGTH_CLASS_NAME = ".conv-header--XMpaBljN >div:nth-child(1)";
 const MESSAGE_LIST_CONTAINER_CLASS_NAME = ".rc-virtual-list-holder-inner";
-const SCROLLBAR_THUMB_CLASS_NAME = ".rc-virtual-list-scrollbar-thumb";
-
 
 async function sendMessage(page, message = 'zhi顶，谢谢啦') {
     const chatBoxLocator = page.locator(CHAT_BOX_CLASS_NAME).first();
     if ((await chatBoxLocator.count({ timeout: 5000 })) > 0) {
-        await chatBoxLocator.fill(message, { timeout: 5000 });
-        await chatBoxLocator.press("Enter", { timeout: 5000 });
+        if (Array.isArray(message)) {
+            for(let i = 0; i < message.length; i++) {
+                await chatBoxLocator.fill(message[i], { timeout: 5000 });
+                await chatBoxLocator.press("Enter", { timeout: 5000 });
+                await sleep(1000);
+            }
+        } else {
+            await chatBoxLocator.fill(message, { timeout: 5000 });
+            await chatBoxLocator.press("Enter", { timeout: 5000 });
+        }
         await sleep(1000);
     } else {
         console.log("Chat box not found");

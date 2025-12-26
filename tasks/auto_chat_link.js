@@ -11,7 +11,6 @@ import {
 let DEFAULT_MESSAGE = "";
 const ADDTIONAL_MESSAGE = "";
 // DEFAULT_MESSAGE = "zhi顶，谢谢啦";
-const filter_column_name = "135已发送";
 
 const USE_EXISTING_BROWSER = true;
 
@@ -45,6 +44,7 @@ async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
   }
 
   let counter = 0;
+  let consecutiveSkipCount = 0;
 
   for (const item of itemList) {
     const link = item.linkUrl;
@@ -100,8 +100,18 @@ async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
             message_list[Math.floor(Math.random() * message_list.length)] +
             ADDTIONAL_MESSAGE;
         }
-        await sendMessage(chatPage, message);
+        await sendMessage(chatPage, ["来啦",message]);
         console.log(`Message sent successfully for link: ${link}`);
+        consecutiveSkipCount = 0; // 重置连续跳过计数
+      } else {
+        consecutiveSkipCount++;
+        console.log(`Chat message list length is greater than 2, skip sending message. (连续跳过: ${consecutiveSkipCount})`);
+
+        // 如果连续跳过10次，终止进程
+        if (consecutiveSkipCount >= 10) {
+          console.log(`连续跳过${consecutiveSkipCount}次，达到上限，终止进程...`);
+          process.exit(0);
+        }
       }
     } catch (error) {
       console.log(`Failed to send message for link: ${link}`);
@@ -130,7 +140,7 @@ async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
 //   3000
 // );
 
-const res = await extractLikeLinks(filter_column_name);
+const res = await extractLikeLinks();
 const excelFilePath = path.resolve("input", "点赞链接.xlsx");
 await autoChatLink(res, excelFilePath, 3000);
 
