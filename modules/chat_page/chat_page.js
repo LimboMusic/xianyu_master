@@ -76,7 +76,7 @@ async function scrollVirtualListByWheel(page, scrollDistance = null) {
             await page.mouse.wheel(0, actualScrollDistance);
             await sleep(200);
 
-            console.log(`Virtual list scrolled by wheel ${times} times with deltaY: ${actualScrollDistance} (container height: ${containerBox.height})`);
+            console.log(`Virtual list scrolled by wheel with deltaY: ${actualScrollDistance} (container height: ${containerBox.height})`);
             await sleep(1000); // 等待内容加载
             return true;
         } else {
