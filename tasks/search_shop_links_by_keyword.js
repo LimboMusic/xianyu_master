@@ -264,3 +264,7 @@ async function getShopLinks(url, keyword) {
     process.exit(1);
   }
 })();
+
+// 所有任务完成后结束进程
+console.log('All tasks completed, exiting process...');
+process.exit(0);

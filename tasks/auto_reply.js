@@ -4,8 +4,14 @@ import { getMessageListLength, scrollDownMessageList, clickChatRedPoint, getChat
 
 const url =
     "https://www.goofish.com/im?spm=a21ybx.home.sidebar.2.4c053da6TfOP2U";
-const message = "来啦";
+
+let DEFAULT_MESSAGE = null;
+const ADDTIONAL_MESSAGE = null;
+// DEFAULT_MESSAGE = "来啦";
+
 const USE_EXISTING_BROWSER = true;
+
+const message_list = ["来啦", "在的", "来了", "在呢", "宝子，在的", "宝子，来了", "宝子，在", "亲，你好", "亲，来了",]
 
 async function autoReply(url) {
     const browser = new Browser();
@@ -29,7 +35,7 @@ async function autoReply(url) {
         await sleep(1000);
         if (chatRedPointCount > 0 && chatHeadText.length > 0) {
             if (!/直接买|去评价|交易中|去购买|立即购买|提醒发货|确认收货/.test(chatHeadText)) {
-                await sendMessage(page, message);
+                await sendMessage(page, DEFAULT_MESSAGE + ADDTIONAL_MESSAGE || message_list[Math.floor(Math.random() * message_list.length)] + ADDTIONAL_MESSAGE);
                 await sleep(1000);
             }
         }
@@ -60,7 +66,7 @@ while (remaningMessageListLength > 0 && retryTimes <= 3) {
     remaningMessageListLength = await autoReply(url);
     retryTimes++;
     console.log(`Remaining message list length: ${remaningMessageListLength}, sleep 300 seconds, retry times: ${retryTimes}`);
-    if(remaningMessageListLength > 0) {
+    if (remaningMessageListLength > 0) {
         await sleep(300000);
     }
     else {
@@ -69,3 +75,6 @@ while (remaningMessageListLength > 0 && retryTimes <= 3) {
     }
 }
 
+// 所有任务完成后结束进程
+console.log('All tasks completed, exiting process...');
+process.exit(0);
