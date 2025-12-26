@@ -12,6 +12,7 @@ const CHAT_BUTTON_CLASS_NAME = "a.want--ecByv3Sr";
 const CHAT_BOX_CLASS_NAME = "textarea[placeholder='请输入消息，按Enter键发送或点击发送按钮发送']";
 const CHAT_RED_POINT_CLASS_NAME = ".conversation-item--JReyg97P .ant-scroll-number.ant-badge-count.ant-badge-count-sm";
 const CHAT_HEAD_TEXT_CLASS_NAME = ".container--dgZTBkgv";
+const MESSAGE_CLASS_NAME = ".ant-list-items >div";
 
 async function gotoShopPage(page, className = FIRST_CARD_CLASS_NAME) {
   const elementLocator = page.locator(className).first();
@@ -226,9 +227,9 @@ async function goToChatPage(page) {
       page.waitForEvent("popup"),
       chatButtonLocator.click(),
     ]);
-    await childPage.waitForLoadState('networkidle');
+    await sleep(2000);
     return childPage;
-  } s
+  } 
   return null;
 }
 
@@ -261,6 +262,11 @@ async function getChatHeadText(page) {
   }
 }
 
+async function getMessageListLength(page) {
+  const messageListLocators = page.locator(MESSAGE_CLASS_NAME);
+  return await messageListLocators.count();
+}
+
 export {
   gotoShopPage,
   getIntroText,
@@ -274,4 +280,5 @@ export {
   sendMessage,
   clickChatRedPoint,
   getChatHeadText,
+  getMessageListLength,
 };

@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const STORE_FILE = path.join(__dirname, 'publish_records.json');
-const DAILY_LIMIT = 5; // 每天最多上传次数
+const DAILY_LIMIT = 7; // 每天最多上传次数
 
 /**
  * 读取存储文件

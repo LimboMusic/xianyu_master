@@ -11,16 +11,16 @@ export class Browser {
         try {
             // 添加启动选项，避免段错误
             // Windows 上通常不需要 --no-sandbox，但添加超时和错误处理
-            const launchOptions = { 
+            const launchOptions = {
                 headless: false,
                 timeout: 60000 // 60秒超时
             };
-            
+
             // 只在非 Windows 系统上添加 sandbox 参数
             if (process.platform !== 'win32') {
                 launchOptions.args = ['--no-sandbox', '--disable-setuid-sandbox'];
             }
-            
+
             this.browser = await chromium.launch(launchOptions);
             this.context = await this.browser.newContext();
             this.page = await this.context.newPage();
@@ -130,7 +130,7 @@ export class Browser {
                 }
 
                 await this.page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-                await this.page.waitForLoadState('networkidle', { timeout: 30000 });
+                await sleep(3000);
                 return this.page; // 成功导航，返回页面
             } catch (error) {
                 retryCount++;
