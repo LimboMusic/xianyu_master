@@ -4,6 +4,7 @@ import { sleep } from "../utils/utils.js";
 import { extractLikeLinks } from "../utils/extract_like_links.js";
 import { updateExcelCell } from "../utils/file.js";
 import path from "path";
+import { getMessageListLength } from "../modules/shop_data/shop_data.js";
 
 
 const USE_EXISTING_BROWSER = true;
@@ -21,7 +22,7 @@ async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
   for (const item of itemList) {
     const link = item.linkUrl;
     const rowIndex = item.rowIndex;
-    
+
     console.log(`Start processing link: ${link} (row ${rowIndex + 2})`);
 
     let page = null;
@@ -54,11 +55,14 @@ async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
 
     await sleep(intervalMs);
 
-    let sendSuccess = false;
     try {
-      await sendMessage(chatPage);
-      sendSuccess = true;
-      console.log(`Message sent successfully for link: ${link}`);
+      const messageListLength = await getMessageListLength(chatPage);
+      console.log(`Message list length: ${messageListLength}`);
+      if (messageListLength < 2) {
+        await sendMessage(chatPage);
+        console.log(`Message sent successfully for link: ${link}`);
+      }
+
     } catch (error) {
       console.log(`Failed to send message for link: ${link}`);
       console.log(`Error: ${error.message}`);
@@ -76,11 +80,11 @@ async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
 
     try {
       await chatPage.close();
-    } catch (e) {}
+    } catch (e) { }
 
     try {
       await browser.closePage();
-    } catch (e) {}
+    } catch (e) { }
 
     await sleep(intervalMs);
   }

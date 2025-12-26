@@ -12,8 +12,8 @@ import {
   getImageUrls
 } from "../modules/shop_data/shop_data.js";
 
-const url = 'https://m.tb.cn/h.74NxfEu?tk=eg30fC55tdj'
-const shop_name = 'BC素材铺'
+const url = 'https://m.tb.cn/h.7fhgjkr?tk=mvsCfC5KhNt'
+const shop_name = '咕咕资源库'
 
 const result_list = [];
 const browser = new Browser();

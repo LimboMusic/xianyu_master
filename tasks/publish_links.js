@@ -53,7 +53,7 @@ async function publishLinks(data) {
     const isToday = scheduledDate === today;
     
     console.log(`\n📅 计划发布时间: ${scheduledTime}`);
-    console.log(`📊 今天已安排: ${getTodayCount()}/5，剩余: ${getTodayRemainingCount()} 次`);
+    console.log(`📊 今天已安排: ${getTodayCount()}，剩余: ${getTodayRemainingCount()} 次`);
     
     // 如果今天已满5次，新发布的内容会自动安排到明天
     if (!isToday) {

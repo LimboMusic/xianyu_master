@@ -130,7 +130,7 @@ export class Browser {
                 }
 
                 await this.page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-                await sleep(2000);
+                await sleep(3000);
                 return this.page; // 成功导航，返回页面
             } catch (error) {
                 retryCount++;
