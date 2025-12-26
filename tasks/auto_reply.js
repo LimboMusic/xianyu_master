@@ -43,13 +43,29 @@ async function autoReply(url) {
             // 如果连续10次滚动后都发现redPointCount为0，结束循环
             if (consecutiveZeroCount >= MAX_CONSECUTIVE_ZERO) {
                 console.log(`连续${MAX_CONSECUTIVE_ZERO}次滚动后仍无新消息，结束循环`);
-                break;
+                return await getMessageListLength(page);
             }
         } else {
             consecutiveZeroCount = 0; // 如果redPointCount不为0，重置计数器
         }
     }
     await browser.closeBrowser();
+    return 0;
 }
 
-autoReply(url);
+let remaningMessageListLength = 1
+let retryTimes = 0
+
+while (remaningMessageListLength > 0 && retryTimes <= 3) {
+    remaningMessageListLength = await autoReply(url);
+    retryTimes++;
+    console.log(`Remaining message list length: ${remaningMessageListLength}, sleep 300 seconds, retry times: ${retryTimes}`);
+    if(remaningMessageListLength > 0) {
+        await sleep(300000);
+    }
+    else {
+        console.log(`Remaining message list length is 0, break the loop`);
+        break;
+    }
+}
+
