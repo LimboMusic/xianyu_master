@@ -5,6 +5,8 @@ import { exportToExcelFile } from "../utils/file.js";
 import dayjs from "dayjs";
 import fs from "fs";
 
+const loop_count = 10;
+
 const USE_EXISTING_BROWSER = true;
 const DEBUG_MODE = process.argv.includes('--debug'); // 通过命令行参数启用调试模式
 const output_dir = `output/${dayjs().format("YYYY-MM-DD")}/飞书聊天链接`;
@@ -34,7 +36,7 @@ async function getFeishuChatLinks(url) {
     await clickChatGroup(page);
     await sleep(1000);
     let links = [];
-    for (let i = 1; i <= 4; i++) {
+    for (let i = 1; i <= loop_count; i++) {
         await scrollChatContainer(page, -800);
         links = await getMessageList(page);
         console.log(links);

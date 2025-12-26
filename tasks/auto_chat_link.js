@@ -11,6 +11,7 @@ import {
 let DEFAULT_MESSAGE = "";
 const ADDTIONAL_MESSAGE = "";
 // DEFAULT_MESSAGE = "zhi顶，谢谢啦";
+const filter_column_name = "135已发送";
 
 const USE_EXISTING_BROWSER = true;
 
@@ -43,7 +44,7 @@ async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
     await browser.launchBrowser();
   }
 
-  const counter = 0;
+  let counter = 0;
 
   for (const item of itemList) {
     const link = item.linkUrl;
@@ -109,11 +110,11 @@ async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
 
     try {
       await chatPage.close();
-    } catch (e) {}
+    } catch (e) { }
 
     try {
       await browser.closePage();
-    } catch (e) {}
+    } catch (e) { }
 
     await sleep(intervalMs);
   }
@@ -129,7 +130,7 @@ async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
 //   3000
 // );
 
-const res = await extractLikeLinks();
+const res = await extractLikeLinks(filter_column_name);
 const excelFilePath = path.resolve("input", "点赞链接.xlsx");
 await autoChatLink(res, excelFilePath, 3000);
 
