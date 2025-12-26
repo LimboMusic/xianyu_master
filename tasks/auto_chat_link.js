@@ -1,10 +1,9 @@
 import { Browser } from "../utils/browser.js";
-import { goToChatPage, sendMessage } from "../modules/shop_data/shop_data.js";
+import { goToChatPage } from "../modules/shop_data/shop_data.js";
 import { sleep } from "../utils/utils.js";
 import { extractLikeLinks } from "../utils/extract_like_links.js";
-import { updateExcelCell } from "../utils/file.js";
 import path from "path";
-import { getMessageListLength } from "../modules/shop_data/shop_data.js";
+import { getChatMessageListLength, sendMessage } from "../modules/chat_page/chat_page.js";
 
 
 const USE_EXISTING_BROWSER = true;
@@ -56,9 +55,9 @@ async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
     await sleep(intervalMs);
 
     try {
-      const messageListLength = await getMessageListLength(chatPage);
-      console.log(`Message list length: ${messageListLength}`);
-      if (messageListLength < 2) {
+      const chatMessageListLength = await getChatMessageListLength(chatPage);
+      console.log(`Chat message list length: ${chatMessageListLength}`);
+      if (chatMessageListLength < 2) {
         await sendMessage(chatPage);
         console.log(`Message sent successfully for link: ${link}`);
       }
