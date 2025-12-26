@@ -13,13 +13,17 @@ export function extractUrlFromText(text) {
   return match[0].replace(/[」】）)\u3001\u3002\uff1f\uff01]+$/, "");
 }
 
-export async function extractLikeLinks() {
+export async function extractLikeLinks(filter_column_name = "135已发送") {
   // 读取 input/点赞链接.xlsx
   const inputFile = path.resolve("input", "点赞链接.xlsx");
   console.log(`Reading Excel file: ${inputFile}`);
 
-  const rows = await readExcelFile(inputFile);
+  let rows = await readExcelFile(inputFile);
   console.log(`Total rows: ${rows.length}`);
+
+  if (filter_column_name) {
+    rows = rows.filter(row => row[filter_column_name] !== "是");
+  }
 
   const result = rows.map((row, index) => {
     // 这里列名假设为 “接龙信息”
@@ -29,7 +33,6 @@ export async function extractLikeLinks() {
       "";
 
     const url = extractUrlFromText(text);
-
     return {
       rowIndex: index, // Excel 数据行索引（从 0 开始，对应 Excel 第 2 行，因为第 1 行是表头）
       index: index + 1, // 显示用的序号（从 1 开始）
