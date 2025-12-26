@@ -45,7 +45,6 @@ async function autoReply(url) {
   while (chatRedPointCount > 0 || (await getMessageListLength(page)) > 0) {
     await sleep(2000);
     const chatHeadText = await getChatHeadText(page);
-    console.log(`Chat head text: ${chatHeadText}`);
     console.log(`Chat red point count: ${chatRedPointCount}`);
     console.log(
       `Consecutive zero count: ${consecutiveZeroCount}/${MAX_CONSECUTIVE_ZERO}`
