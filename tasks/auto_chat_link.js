@@ -3,19 +3,35 @@ import { goToChatPage } from "../modules/shop_data/shop_data.js";
 import { sleep } from "../utils/utils.js";
 import { extractLikeLinks } from "../utils/extract_like_links.js";
 import path from "path";
-import { getChatMessageListLength, sendMessage } from "../modules/chat_page/chat_page.js";
+import {
+  getChatMessageListLength,
+  sendMessage,
+} from "../modules/chat_page/chat_page.js";
 
-let DEFAULT_MESSAGE = null;
-const ADDTIONAL_MESSAGE = null;
+let DEFAULT_MESSAGE = "";
+const ADDTIONAL_MESSAGE = "";
 // DEFAULT_MESSAGE = "zhi顶，谢谢啦";
-
 
 const USE_EXISTING_BROWSER = true;
 
-
-
-const message_list = ["现在还有货吗？zhi顶，谢谢啦", "今天能发货吗？zhi顶，谢谢啦", "偏远地区要加多少邮费？置ding，谢谢宝子", "全新的吗？zhi顶，谢谢", "包邮吗?置ding，谢谢", "什么时候能发货，zhi顶，谢谢", "质保到什么时候？zhi顶，宝子", "还有吗？zhi顶哦", "zhi顶，谢谢啦", "zhi顶，谢谢", "zhi顶，感谢宝子", "宝子，zhi顶", "宝子，zhi顶，谢谢啦", "宝子，zhi顶，谢谢", "宝子，zhi顶，感谢宝子", "宝子，zhi顶，感谢宝子",
-]
+const message_list = [
+  "现在还有货吗？zhi顶，谢谢啦",
+  "今天能发货吗？zhi顶，谢谢啦",
+  "偏远地区要加多少邮费？置ding，谢谢宝子",
+  "全新的吗？zhi顶，谢谢",
+  "包邮吗?置ding，谢谢",
+  "什么时候能发货，zhi顶，谢谢",
+  "质保到什么时候？zhi顶，宝子",
+  "还有吗？zhi顶哦",
+  "zhi顶，谢谢啦",
+  "zhi顶，谢谢",
+  "zhi顶，感谢宝子",
+  "宝子，zhi顶",
+  "宝子，zhi顶，谢谢啦",
+  "宝子，zhi顶，谢谢",
+  "宝子，zhi顶，感谢宝子",
+  "宝子，zhi顶，感谢宝子",
+];
 
 async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
   const itemList = Array.isArray(items) ? items : [items];
@@ -27,7 +43,7 @@ async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
     await browser.launchBrowser();
   }
 
-  const counter = 0
+  const counter = 0;
 
   for (const item of itemList) {
     const link = item.linkUrl;
@@ -40,7 +56,9 @@ async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
       // 限制重试次数，避免长时间卡在一个链接上
       page = await browser.navigateWithRetry(link, { maxRetries: 3 });
     } catch (error) {
-      console.log(`Failed to navigate to link, skip and go next. Link: ${link}`);
+      console.log(
+        `Failed to navigate to link, skip and go next. Link: ${link}`
+      );
       console.log(`Error: ${error.message}`);
       continue; // 跳过当前链接，继续下一个
     }
@@ -59,7 +77,9 @@ async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
     }
 
     if (!chatPage) {
-      console.log(`Chat page not opened for link: ${link}, skip sending message.`);
+      console.log(
+        `Chat page not opened for link: ${link}, skip sending message.`
+      );
       continue;
     }
 
@@ -71,10 +91,17 @@ async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
       console.log(`Have sent ${counter} messages`);
       console.log(`Chat message list length: ${chatMessageListLength}`);
       if (chatMessageListLength < 2) {
-        await sendMessage(chatPage, DEFAULT_MESSAGE + ADDTIONAL_MESSAGE || message_list[Math.floor(Math.random() * message_list.length)] + ADDTIONAL_MESSAGE);
+        let message = "";
+        if (DEFAULT_MESSAGE !== "") {
+          message = DEFAULT_MESSAGE + ADDTIONAL_MESSAGE;
+        } else {
+          message =
+            message_list[Math.floor(Math.random() * message_list.length)] +
+            ADDTIONAL_MESSAGE;
+        }
+        await sendMessage(chatPage, message);
         console.log(`Message sent successfully for link: ${link}`);
       }
-
     } catch (error) {
       console.log(`Failed to send message for link: ${link}`);
       console.log(`Error: ${error.message}`);
@@ -82,11 +109,11 @@ async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
 
     try {
       await chatPage.close();
-    } catch (e) { }
+    } catch (e) {}
 
     try {
       await browser.closePage();
-    } catch (e) { }
+    } catch (e) {}
 
     await sleep(intervalMs);
   }
@@ -102,11 +129,10 @@ async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
 //   3000
 // );
 
-
 const res = await extractLikeLinks();
 const excelFilePath = path.resolve("input", "点赞链接.xlsx");
 await autoChatLink(res, excelFilePath, 3000);
 
 // 所有任务完成后结束进程
-console.log('All tasks completed, exiting process...');
+console.log("All tasks completed, exiting process...");
 process.exit(0);
