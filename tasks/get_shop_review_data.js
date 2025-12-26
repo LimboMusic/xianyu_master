@@ -66,3 +66,8 @@ for (const row of data) {
 }
 
 await exportToExcelFile(rsult_list, `${output_dir}/店铺每日售出数据_${dayjs().format('YYYY-MM-DD')}.xlsx`,'店铺名');
+
+
+// 所有任务完成后结束进程
+console.log('All tasks completed, exiting process...');
+process.exit(0);

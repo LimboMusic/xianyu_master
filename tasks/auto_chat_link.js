@@ -5,8 +5,17 @@ import { extractLikeLinks } from "../utils/extract_like_links.js";
 import path from "path";
 import { getChatMessageListLength, sendMessage } from "../modules/chat_page/chat_page.js";
 
+let DEFAULT_MESSAGE = null;
+const ADDTIONAL_MESSAGE = null;
+// DEFAULT_MESSAGE = "zhi顶，谢谢啦";
+
 
 const USE_EXISTING_BROWSER = true;
+
+
+
+const message_list = ["现在还有货吗？zhi顶，谢谢啦", "今天能发货吗？zhi顶，谢谢啦", "偏远地区要加多少邮费？置ding，谢谢宝子", "全新的吗？zhi顶，谢谢", "包邮吗?置ding，谢谢", "什么时候能发货，zhi顶，谢谢", "质保到什么时候？zhi顶，宝子", "还有吗？zhi顶哦", "zhi顶，谢谢啦", "zhi顶，谢谢", "zhi顶，感谢宝子", "宝子，zhi顶", "宝子，zhi顶，谢谢啦", "宝子，zhi顶，谢谢", "宝子，zhi顶，感谢宝子", "宝子，zhi顶，感谢宝子",
+]
 
 async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
   const itemList = Array.isArray(items) ? items : [items];
@@ -17,6 +26,8 @@ async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
   } else {
     await browser.launchBrowser();
   }
+
+  const counter = 0
 
   for (const item of itemList) {
     const link = item.linkUrl;
@@ -55,10 +66,12 @@ async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
     await sleep(intervalMs);
 
     try {
+      counter++;
       const chatMessageListLength = await getChatMessageListLength(chatPage);
+      console.log(`Have sent ${counter} messages`);
       console.log(`Chat message list length: ${chatMessageListLength}`);
       if (chatMessageListLength < 2) {
-        await sendMessage(chatPage);
+        await sendMessage(chatPage, DEFAULT_MESSAGE + ADDTIONAL_MESSAGE || message_list[Math.floor(Math.random() * message_list.length)] + ADDTIONAL_MESSAGE);
         console.log(`Message sent successfully for link: ${link}`);
       }
 
@@ -66,16 +79,6 @@ async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
       console.log(`Failed to send message for link: ${link}`);
       console.log(`Error: ${error.message}`);
     }
-
-    // 如果发送成功，更新 Excel 中的"是否发送"列
-    // if (sendSuccess && excelFilePath && rowIndex !== undefined) {
-    //   try {
-    //     await updateExcelCell(excelFilePath, rowIndex, "是否发送", "是");
-    //     console.log(`Updated Excel: row ${rowIndex + 2}, "是否发送" = "是"`);
-    //   } catch (error) {
-    //     console.log(`Failed to update Excel: ${error.message}`);
-    //   }
-    // }
 
     try {
       await chatPage.close();
@@ -103,3 +106,7 @@ async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
 const res = await extractLikeLinks();
 const excelFilePath = path.resolve("input", "点赞链接.xlsx");
 await autoChatLink(res, excelFilePath, 3000);
+
+// 所有任务完成后结束进程
+console.log('All tasks completed, exiting process...');
+process.exit(0);
