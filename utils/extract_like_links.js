@@ -13,9 +13,9 @@ export function extractUrlFromText(text) {
   return match[0].replace(/[」】）)\u3001\u3002\uff1f\uff01]+$/, "");
 }
 
-export async function extractLikeLinks(filter_column_name = "135已发送") {
+export async function extractLikeLinks(filter_column_name) {
   // 读取 input/点赞链接.xlsx
-  const inputFile = path.resolve("input", "点赞链接.xlsx");
+  const inputFile = path.resolve("input", "汇总_点赞链接.xlsx");
   console.log(`Reading Excel file: ${inputFile}`);
 
   let rows = await readExcelFile(inputFile);

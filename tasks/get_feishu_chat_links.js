@@ -5,7 +5,7 @@ import { exportToExcelFile } from "../utils/file.js";
 import dayjs from "dayjs";
 import fs from "fs";
 
-const loop_count = 10;
+const loop_count = 20;
 
 const USE_EXISTING_BROWSER = true;
 const DEBUG_MODE = process.argv.includes('--debug'); // 通过命令行参数启用调试模式

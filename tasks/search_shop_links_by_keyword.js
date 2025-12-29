@@ -16,7 +16,7 @@ import {
   extractItemId,
 } from "../modules/shop_data/shop_data.js";
 
-const keyword = "ppt模板";
+const keyword = "提示词";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -119,15 +119,24 @@ async function getShopLinks(url, keyword) {
           continue;
         }
         if (!newPage) {
-          console.log("No more elements to process");
-          break;
+          // 检查是否真的没有更多元素，还是只是当前元素加载失败
+          const currentCount = await page
+            .locator('.feeds-item-wrap--rGdH_KoF:not([id="selected"])')
+            .count();
+          if (currentCount === 0) {
+            console.log("No more elements to process");
+            break;
+          } else {
+            console.log(`Page load failed for current element, but ${currentCount} elements remain. Continuing to next element.`);
+            continue;
+          }
         }
 
         const { reviewNumber, wantNumber } = await getReviewAndWantNumber(
           newPage
         );
         const description = await getLinkDescription(newPage);
-        const imageUrls = await getImageUrls(newPage);
+        const imageUrls = await getImageUrls(newPage, false);
         const userName = await getUserName(newPage);
         const linkUrl = await newPage.url();
         const id = await extractItemId(linkUrl || "");
@@ -196,10 +205,11 @@ async function getShopLinks(url, keyword) {
         }
 
         try {
-          // 重新计算剩余元素数量
+          // 重新计算剩余元素数量，使用与主循环相同的选择器
           count = await page
-            .locator('.cardWarp--dZodM57A:not([id="selected"])')
+            .locator('.feeds-item-wrap--rGdH_KoF:not([id="selected"])')
             .count();
+          console.log(`Error recovery - Remaining count: ${count}, Processed: ${processedCount}`);
           if (count === 0) break;
         } catch (countError) {
           console.log(`Failed to recount elements: ${countError.message}`);
@@ -253,7 +263,7 @@ async function getShopLinks(url, keyword) {
 }
 
 // 使用立即执行的异步函数包装顶层 await，避免段错误
-(async () => {
+await (async () => {
   try {
     await getShopLinks(
       `https://www.goofish.com/search?q=${keyword}&spm=a21ybx.search.searchInput.0`,
