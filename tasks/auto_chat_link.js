@@ -1,5 +1,5 @@
 import { Browser } from "../utils/browser.js";
-import { goToChatPage } from "../modules/shop_data/shop_data.js";
+import { goToChatPage, getUserName } from "../modules/shop_data/shop_data.js";
 import { sleep } from "../utils/utils.js";
 import { extractLikeLinks } from "../utils/extract_like_links.js";
 import path from "path";
@@ -7,9 +7,11 @@ import {
   getChatMessageListLength,
   sendMessage,
 } from "../modules/chat_page/chat_page.js";
+import { exportToExcelFile } from "../utils/file.js";
 
 let DEFAULT_MESSAGE = "";
 const ADDTIONAL_MESSAGE = "";
+const userList = []
 // DEFAULT_MESSAGE = "zhi顶，谢谢啦";
 
 const USE_EXISTING_BROWSER = true;
@@ -72,6 +74,11 @@ async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
     let chatPage = null;
     try {
       chatPage = await goToChatPage(page);
+      const userName = await getUserName(page);
+      userList.push({ '用户名': userName, '日期': dayjs().format('YYYY-MM-DD') });
+      if(userList.length % 10 === 0) {
+        await exportToExcelFile(userList, path.resolve("input", "点赞_用户列表.xlsx"), "用户名");
+      }
     } catch (error) {
       console.log(`Failed to go to chat page for link: ${link}`);
       console.log(`Error: ${error.message}`);
@@ -100,7 +107,7 @@ async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
             message_list[Math.floor(Math.random() * message_list.length)] +
             ADDTIONAL_MESSAGE;
         }
-        await sendMessage(chatPage, ["来啦",message]);
+        await sendMessage(chatPage, ["来啦", message]);
         console.log(`Message sent successfully for link: ${link}`);
         consecutiveSkipCount = 0; // 重置连续跳过计数
       } else {
@@ -141,7 +148,7 @@ async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
 // );
 
 const res = await extractLikeLinks();
-const excelFilePath = path.resolve("input", "点赞链接.xlsx");
+const excelFilePath = path.resolve("input", "汇总_点赞链接.xlsx");
 await autoChatLink(res, excelFilePath, 3000);
 
 // 所有任务完成后结束进程

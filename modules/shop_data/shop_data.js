@@ -190,7 +190,7 @@ async function getImageUrls(page, is_multiple = true) {
       }
     }
 
-    return mediaUrlList;
+    return JSON.parse(mediaUrlList);
   } catch (error) {
     console.log(`Warning: Failed to get media URLs: ${error.message}`);
     return [];
