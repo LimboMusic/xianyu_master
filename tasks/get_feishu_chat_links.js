@@ -33,6 +33,8 @@ async function getFeishuChatLinks(url) {
         return [];
     }
 
+    await sleep(10000)
+
     await clickChatGroup(page);
     await sleep(1000);
     let links = [];

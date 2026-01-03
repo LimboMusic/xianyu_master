@@ -246,6 +246,8 @@ export async function getMessageList(page) {
 export async function clickChatGroup(page, targetText = "老强说闲鱼互助群") {
   const chatGroups = await page.locator(CHAT_GROUPS_CLASS_NAME).all();
 
+  await page.waitForTimeout(5000);
+
   // 查找包含指定文本的聊天组
   for (const group of chatGroups) {
     try {

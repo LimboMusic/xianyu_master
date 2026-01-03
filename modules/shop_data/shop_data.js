@@ -79,6 +79,14 @@ async function getIntroText(page) {
   const color = getRandomColor();
   const introLocator = page.locator(INTRO_CLASS_NAME).first();
 
+  // 等待元素出现
+  try {
+    await introLocator.waitFor({ timeout: 5000 });
+  } catch (error) {
+    console.log("Intro element not found within timeout", page.url());
+    return "";
+  }
+
   // 如果没找到元素就跳过背景色设置
   if ((await introLocator.count()) > 0) {
     await introLocator.evaluate((element, color) => {
