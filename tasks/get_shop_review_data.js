@@ -17,9 +17,9 @@ async function getShopData(url) {
   const page = browser.page;
   await page.goto(url);
   await page.waitForLoadState('networkidle');
-  await sleep(1000)
+  await sleep(3000)
   const newPage = await gotoShopPage(page);
-  await sleep(1000)
+  await sleep(3000)
   const introText = await getIntroText(newPage);
   const salesMatch = introText.match(/卖出(\d+)件宝贝/);
   let salesCount = 0;

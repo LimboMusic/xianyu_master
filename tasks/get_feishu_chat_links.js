@@ -24,6 +24,8 @@ async function getFeishuChatLinks(url) {
     await sleep(1000);
     const page = await browser.navigateWithRetry(url);
 
+    await sleep(3000);
+
     if (DEBUG_MODE) {
         console.log('=== 调试模式：检查消息元素选择器 ===');
         await clickChatGroup(page);

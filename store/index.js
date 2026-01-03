@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const STORE_FILE = path.join(__dirname, 'publish_records.json');
-const DAILY_LIMIT = 7; // 每天最多上传次数
+const DAILY_LIMIT = 5; // 每天最多上传次数
 
 /**
  * 读取存储文件
@@ -138,7 +138,7 @@ export function getNextPublishTime() {
             // 如果最后一次发布的日期还有剩余次数，继续在那个日期发布
             nextDate = dayjs(lastPublishDate);
             const lastTime = dayjs(store.lastPublishTime);
-            nextTime = lastTime.add(2, 'hour');
+            nextTime = lastTime.add(4, 'hour');
             // 如果计算出的时间已经过了，就用当前时间
             if (nextTime.isBefore(now)) {
                 nextTime = now;

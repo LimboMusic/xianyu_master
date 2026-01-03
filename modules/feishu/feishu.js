@@ -250,6 +250,7 @@ export async function clickChatGroup(page, targetText = "老强说闲鱼互助�
   for (const group of chatGroups) {
     try {
       const text = await group.innerText();
+      console.log(`Found chat group: "${text}"`);
       if (text.includes(targetText)) {
         console.log(`Found target chat group: "${text}"`);
         await group.click();
