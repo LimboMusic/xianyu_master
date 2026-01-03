@@ -6,6 +6,7 @@ import {
   clickChatRedPoint,
   getChatHeadText,
   sendMessage,
+  
 } from "../modules/chat_page/chat_page.js";
 
 const url =
@@ -52,7 +53,7 @@ async function autoReply(url) {
     await sleep(1000);
     if (chatRedPointCount > 0 && chatHeadText.length > 0) {
       if (
-        !/直接买|去评价|交易中|去购买|立即购买|提醒发货|确认收货/.test(
+        !/直接买|去评价|交易中|去购买|立即购买|提醒发货|确认收货|购买|购|买/.test(
           chatHeadText
         )
       ) {

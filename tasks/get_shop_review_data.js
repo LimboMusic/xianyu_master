@@ -17,7 +17,7 @@ async function getShopData(url) {
   const page = browser.page;
   await page.goto(url);
   await page.waitForLoadState('networkidle');
-  await sleep(1000)
+  await sleep(2000)
   const newPage = await gotoShopPage(page);
   await sleep(1000)
   const introText = await getIntroText(newPage);

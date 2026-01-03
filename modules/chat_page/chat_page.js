@@ -6,12 +6,13 @@ const CHAT_HEAD_TEXT_CLASS_NAME = ".container--dgZTBkgv";
 const MESSAGE_CLASS_NAME = ".ant-list-items >div";
 const MESSAGE_LIST_LENGTH_CLASS_NAME = ".conv-header--XMpaBljN >div:nth-child(1)";
 const MESSAGE_LIST_CONTAINER_CLASS_NAME = ".rc-virtual-list-holder-inner";
+const USER_NAME_CLASS_NAME = '.message-topbar--uzL8Czfo >div:nth-child(1) >span:nth-child(1)'
 
 async function sendMessage(page, message = 'zhi顶，谢谢啦') {
     const chatBoxLocator = page.locator(CHAT_BOX_CLASS_NAME).first();
     if ((await chatBoxLocator.count({ timeout: 5000 })) > 0) {
         if (Array.isArray(message)) {
-            for(let i = 0; i < message.length; i++) {
+            for (let i = 0; i < message.length; i++) {
                 await chatBoxLocator.fill(message[i], { timeout: 5000 });
                 await chatBoxLocator.press("Enter", { timeout: 5000 });
                 await sleep(1000);
@@ -34,7 +35,6 @@ async function clickChatRedPoint(page) {
     }
     return chatRedPointCount;
 }
-
 async function getChatHeadText(page) {
     const chatHeadTextLocator = page.locator(CHAT_HEAD_TEXT_CLASS_NAME).first();
     try {
@@ -99,6 +99,11 @@ async function scrollDownMessageList(page, distance = 1000, maxRetries = 3) {
     return await scrollVirtualListByWheel(page, null);
 }
 
+async function getUserName(page) {
+    const userNameLocator = page.locator(USER_NAME_CLASS_NAME).first();
+    return await userNameLocator.innerText();
+}
+
 export {
     sendMessage,
     clickChatRedPoint,
@@ -107,4 +112,5 @@ export {
     getMessageListLength,
     scrollVirtualListByWheel,
     scrollDownMessageList,
+    getUserName,
 };

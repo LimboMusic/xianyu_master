@@ -1,6 +1,9 @@
 import { getRandomColor } from '../../utils/color.js';
 import sharp from 'sharp';
 import { sleep } from '../../utils/utils.js';
+import { blurWatermark } from '../../utils/image.js';
+import fs from 'fs';
+import path from 'path';
 
 
 const CATEGORY_CLASS_NAME = '.title___xowHU.h-24.cursor-pointer.text-14';
@@ -49,7 +52,10 @@ export async function clickNextButton(page) {
     return;
 }
 
-export async function uploadImage(page, imageUrl = null) {
+export async function uploadImage(page, imageUrl = null,blur = false) {
+    if (blur) {
+        imageUrl = await blurWatermark(imageUrl,'output/image.png');
+    }
     if (!imageUrl) {
         // 如果没有提供图片URL，只点击上传按钮
         const uploadImageLocator = page.locator(UPLOAD_IMAGE_CLASS_NAME).first();
@@ -62,25 +68,36 @@ export async function uploadImage(page, imageUrl = null) {
     }
 
     try {
-        // 处理URL，确保它是完整的URL
-        let fullUrl = imageUrl;
-        if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
-            // 如果是相对URL，自动添加https协议
-            fullUrl = 'https://' + imageUrl;
+        let imageBuffer;
+        let extension = 'png';
+        
+        // 判断是本地文件路径还是网络URL
+        if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+            // 网络URL，使用 Playwright 上下文的 request 来下载图片
+            const response = await page.request.get(imageUrl);
+
+            if (!response.ok()) {
+                throw new Error(`无法下载图片: ${response.status()} - ${response.statusText()}`);
+            }
+
+            imageBuffer = await response.body();
+
+            // 获取图片的文件扩展名，如果URL中没有扩展名则默认为png
+            const urlParts = imageUrl.split('.');
+            extension = urlParts.length > 1 ? urlParts[urlParts.length - 1].split('?')[0] : 'png';
+        } else {
+            // 本地文件路径，直接读取文件
+            // 检查文件是否存在
+            if (!fs.existsSync(imageUrl)) {
+                throw new Error(`本地文件不存在: ${imageUrl}`);
+            }
+            
+            // 读取文件
+            imageBuffer = fs.readFileSync(imageUrl);
+            
+            // 从文件路径获取扩展名
+            extension = path.extname(imageUrl).slice(1) || 'png';
         }
-
-        // 使用 Playwright 上下文的 request 来下载图片，这样可以利用当前的 Cookie/Session 状态
-        const response = await page.request.get(fullUrl);
-
-        if (!response.ok()) {
-            throw new Error(`无法下载图片: ${response.status()} - ${response.statusText()}`);
-        }
-
-        let imageBuffer = await response.body();
-
-        // 获取图片的文件扩展名，如果URL中没有扩展名则默认为png
-        const urlParts = imageUrl.split('.');
-        let extension = urlParts.length > 1 ? urlParts[urlParts.length - 1].split('?')[0] : 'png';
 
         // 如果是webp格式，转换为png
         if (extension.toLowerCase() === 'webp') {

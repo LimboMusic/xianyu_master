@@ -8,6 +8,7 @@ import {
   sendMessage,
 } from "../modules/chat_page/chat_page.js";
 import { exportToExcelFile } from "../utils/file.js";
+import dayjs from "dayjs";
 
 let DEFAULT_MESSAGE = "";
 const ADDTIONAL_MESSAGE = "";

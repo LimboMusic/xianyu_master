@@ -16,7 +16,7 @@ import {
   extractItemId,
 } from "../modules/shop_data/shop_data.js";
 
-const keyword = "提示词";
+const keyword = "复习资料 电子版";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -104,6 +104,7 @@ async function getShopLinks(url, keyword) {
     while (count > 1 && processedCount < maxProcessedPerSession) {
       // 检查页面是否仍然有效，如果无效则重新创建
       await browser.ensurePageValid(url);
+      await sleep(1000);
       count = await page
         .locator('.feeds-item-wrap--rGdH_KoF:not([id="selected"])')
         .count();
