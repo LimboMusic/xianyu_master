@@ -1,12 +1,13 @@
 import { sleep } from "../../utils/utils.js";
 
 const RESPONSE_CLASS_NAME = 'code'
+const DIALOG_CONFIRM_BUTTON_CLASS_NAME = 'div[role="alertdialog"] button:nth-child(2)'
 
 const LINK_PRODUCTION_PROMPT = `请扮演一个闲鱼虚拟资料爆款文案优化专家，基于我提供的对标文案，完成以下四项任务：
 
 1. **标题优化**：
    - 保留核心关键词，但升级为更具吸引力的表述
-   - 长度控制在90个字符以内
+   - 长度控制在30个字符以内
    - 突出产品的核心价值和独特卖点
    - 使用数字量化产品的价值
    - 直接承诺用户可以获得的利益
@@ -19,6 +20,7 @@ const LINK_PRODUCTION_PROMPT = `请扮演一个闲鱼虚拟资料爆款文案优
    - 保持原有的免责声明信息
    - 格式为JSON的content字段
    - 使用✅符号将产品的卖点分点列出
+   - 每一点之间用'\\n'换行符分割
    - 将产品的功能与具体的使用场景相结合
    - 提供信任背书和风险降低的服务承诺
 
@@ -147,4 +149,20 @@ const getResponseJson = async (page, id, interval = 3000) => {
     return obj
 }
 
-export { gotoCoZiPage, inputPrompt, getResponseJson };
+const clickDialogConfirmButton = async (page) => {
+    try {
+        const dialogConfirmButton = await page.locator(DIALOG_CONFIRM_BUTTON_CLASS_NAME).first();
+        await dialogConfirmButton.waitFor({ timeout: 5000 });
+        if (await dialogConfirmButton.count() > 0) {
+            await dialogConfirmButton.click();
+            console.log('点击确认按钮');
+            await sleep(1000);
+        } else {
+            console.log('确认按钮未找到');
+        }
+    } catch (error) {
+        console.log('确认按钮未找到或点击失败，继续执行:', error.message);
+    }
+}
+
+export { gotoCoZiPage, inputPrompt, getResponseJson, clickDialogConfirmButton };
