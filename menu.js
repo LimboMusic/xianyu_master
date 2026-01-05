@@ -1,59 +1,70 @@
 import inquirer from 'inquirer';
 import { spawn } from 'child_process';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-// --- 配置你的脚本列表 ---
-// name: 终端显示的文字
-// value: 对应的文件路径 (相对于项目根目录)
-const scripts = [
-  { 
-    name: '搜索店铺里的所有链接', 
-    value: './tasks/search_shop_links.js' 
-  },
-  { 
-    name: '获取店铺想要数据', 
-    value: './tasks/get_shop_review_data.js' 
+// 修正 ESM 环境下的路径问题
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const questions = [
+  {
+    type: 'rawlist', // 关键修改：从 'list' 改为 'rawlist'
+    name: 'scriptToRun',
+    message: '你想运行哪个脚本？(请输入左侧的数字编号)',
+    choices: [
+      {
+        name: '每日搜索任务 (get_shop_review_data.js)',
+        value: 'tasks/get_shop_review_data.js'
+      },
+      {
+        name: '获取飞书聊天链接任务 (get_feishu_chat_links.js)',
+        value: 'tasks/get_feishu_chat_links.js'
+      },
+      {
+        name: '自动点赞任务 (auto_chat_link.js)',
+        value: 'tasks/auto_chat_link.js'
+      },
+      {
+        name: '自动回复任务 (auto_reply.js)',
+        value: 'tasks/auto_reply.js'
+      },
+      {
+        name: '自动发布任务 (publish_links.js)',
+        value: 'tasks/publish_links.js'
+      },
+      {
+        name: '自动根据关键词搜索任务 (search_shop_links_by_keyword.js)',
+        value: 'tasks/search_shop_links_by_keyword.js'
+      },
+      {
+        name: '发布链接任务 (publish_links.js)',
+        value: 'tasks/publish_links.js'
+      },
+      {
+        name: '获取指定店铺链接任务 (get_shop_links.js)',
+        value: 'tasks/get_shop_links.js'
+      },
+    ]
   }
 ];
 
-// --- 主逻辑 ---
-try {
-  console.clear(); //以此清除之前的控制台信息，界面更清爽
-  console.log('🤖 自动化任务控制台 \n');
+inquirer.prompt(questions).then((answers) => {
+  // 使用 path.join 确保在 Windows 环境下路径斜杠正确
+  const scriptPath = path.join(__dirname, answers.scriptToRun);
 
-  // 1. 启动菜单
-  const answer = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'targetFile',
-      message: '请选择要执行的任务:',
-      choices: scripts,
-      pageSize: 10
-    }
-  ]);
+  console.log(`\n🚀 准备执行: ${scriptPath}`);
 
-  const scriptPath = answer.targetFile;
-  
-  console.log(`\n🚀 正在启动: ${scriptPath} ...\n`);
-  console.log('--------------------------------------------------');
-
-  // 2. 执行 Node 命令
-  // 使用 'inherit' 可以让子进程直接使用当前终端的输入输出（保留颜色，支持交互）
   const child = spawn('node', [scriptPath], {
-    stdio: 'inherit', 
-    shell: true 
+    stdio: 'inherit',
+    shell: true // Windows 建议开启 shell 模式以增强兼容性
   });
 
-  // 3. 监听结束
+  child.on('error', (err) => {
+    console.error(`\n❌ 启动失败: ${err.message}`);
+  });
+
   child.on('close', (code) => {
-    console.log('--------------------------------------------------');
-    console.log(`✅ 任务结束 (退出码: ${code})`);
+    console.log(`\n✅ 脚本执行结束，退出码: ${code}`);
   });
-
-} catch (error) {
-  if (error.isTtyError) {
-    console.error("❌ 无法在当前环境中渲染交互菜单");
-  } else {
-    console.error("❌ 发生错误:", error);
-  }
-}
+});

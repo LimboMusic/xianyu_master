@@ -1,4 +1,4 @@
-import { inputPrompt, getResponseJson } from "../modules/kouzi/kouzi.js";
+import { inputPrompt, getResponseJson, clickDialogConfirmButton } from "../modules/kouzi/kouzi.js";
 import { Browser } from "../utils/browser.js";
 import { sleep } from "../utils/utils.js";
 import path from "path";
@@ -14,7 +14,7 @@ async function testCoZi(data) {
     } else {
         await browser.launchBrowser();
     }
-    const page = await browser.navigateWithRetry('https://space.coze.cn/task/7590320827037368639');
+    const page = await browser.navigateWithRetry('https://space.coze.cn/task/7591111824683204891');
     let counter = 0
     try {
         for (const row of data) {
@@ -22,6 +22,7 @@ async function testCoZi(data) {
             console.log(`Processing row ${counter} of ${data.length}`);
             const str = row['标题'] + `图片：${row['图片']}` + `id:${row['id']}`;
             await inputPrompt(page, str);
+            await clickDialogConfirmButton(page);
             const response = await getResponseJson(page, row['id']);
             const obj = { id: response.id, '名称': response['title'], '标题': response['content'], '图片': response['img_url'], '链接': row['链接'] };
             await sleep(3000);
