@@ -16,7 +16,9 @@ import {
   extractItemId,
 } from "../modules/shop_data/shop_data.js";
 
-const keyword = "复习资料 电子版";
+const keyword = "ppt模板";
+
+const USE_EXISTING_BROWSER = true
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -82,7 +84,11 @@ async function getShopLinks(url, keyword) {
     const output_dir_local = output_dir_absolute;
 
     console.log("Launching browser...");
-    await browser.launchBrowser();
+    if (USE_EXISTING_BROWSER) {
+      await browser.connectToExistingBrowser();
+    } else {
+      await browser.launchBrowser();
+    }
     console.log("Browser launched successfully");
     let count = 0;
     let page;
@@ -180,7 +186,7 @@ async function getShopLinks(url, keyword) {
         console.log(`Remaining count: ${count}, Processed: ${processedCount}`);
 
         // 定期保存进度
-        if (result_list.length > 0 && result_list.length % 5 === 0) {
+        if (result_list.length > 0 && result_list.length % 10 === 0) {
           const filename = path.join(
             output_dir_local,
             `${keyword.trim()}_${dayjs().format("YYYY-MM-DD")}.xlsx`

@@ -45,6 +45,10 @@ const questions = [
         name: '获取指定店铺链接任务 (get_shop_links.js)',
         value: 'tasks/get_shop_links.js'
       },
+      {
+        name: '预制资源处理任务 (process_link_cozi.js)',
+        value: 'tasks/process_link_cozi.js'
+      }
     ]
   }
 ];
