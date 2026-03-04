@@ -87,7 +87,7 @@ export function getNextPublishTime() {
     
     // 如果没有发布记录，从今天开始，延迟2小时
     if (!store.lastPublishTime) {
-        const firstPublishTime = now.add(2, 'hour').format('YYYY-MM-DD HH:mm:ss');
+        const firstPublishTime = now.add(4, 'hour').format('YYYY-MM-DD HH:mm:ss');
         return {
             date: today,
             time: firstPublishTime,
@@ -116,7 +116,7 @@ export function getNextPublishTime() {
         
         // 如果最后一次发布是今天，至少间隔2小时
         if (lastPublishDate === today) {
-            nextTime = lastTime.add(2, 'hour');
+            nextTime = lastTime.add(4, 'hour');
         }
         
         return {
@@ -138,7 +138,7 @@ export function getNextPublishTime() {
             // 如果最后一次发布的日期还有剩余次数，继续在那个日期发布
             nextDate = dayjs(lastPublishDate);
             const lastTime = dayjs(store.lastPublishTime);
-            nextTime = lastTime.add(2, 'hour');
+            nextTime = lastTime.add(4, 'hour');
             // 如果计算出的时间已经过了，就用当前时间
             if (nextTime.isBefore(now)) {
                 nextTime = now;

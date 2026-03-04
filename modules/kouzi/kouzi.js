@@ -13,6 +13,7 @@ const LINK_PRODUCTION_PROMPT = `请扮演一个闲鱼虚拟资料爆款文案优
    - 直接承诺用户可以获得的利益
    - 格式为JSON的title字段
    - 不要带表情，只有文字
+   - 开头加上【秒发】前缀
 
 2. **内容重构**：
    - 将对标文案中的功能点转化为可感知的利益点
@@ -76,7 +77,7 @@ const inputPrompt = async (page, prompt) => {
     await sleep(1000);
 }
 
-const getResponseJson = async (page, id, interval = 3000) => {
+const getResponseJson = async (page, id, interval = 7000) => {
     let obj = { id: '' };
     let attempts = 0;
     const maxAttempts = 30; // 最多尝试30次
@@ -90,12 +91,19 @@ const getResponseJson = async (page, id, interval = 3000) => {
         // 优先寻找classname为lines-content的元素，如果没有再寻找code元素
         let responseElement;
         try {
+            // 优先尝试 lines-content
             responseElement = await page.locator('.lines-content').last();
             await responseElement.waitFor({ timeout: 5000 });
         } catch (e) {
             console.log('lines-content元素未找到，尝试寻找code元素');
-            responseElement = await page.locator('code').last();
-            await responseElement.waitFor({ timeout: 10000 });
+            try {
+                responseElement = await page.locator('code').last();
+                await responseElement.waitFor({ timeout: 5000 });
+            } catch (e2) {
+                console.log('code元素同样未找到，本次轮询跳过，稍后重试');
+                await sleep(interval);
+                continue;
+            }
         }
 
         // 获取innerText
@@ -117,7 +125,7 @@ const getResponseJson = async (page, id, interval = 3000) => {
                 .replace(/\n?```$/, '')     // 移除结尾的markdown代码块标记
                 .replace(/^{\\n/, '{')       // 移除开头的{\n
                 .replace(/\\n}$/, '}')       // 移除结尾的\n}
-                .replace(/\\n/g, '')         // 移除所有的\n（因为它们破坏了JSON格式）
+                // .replace(/\\n/g, '')      // 保留中间的\n，用于换行
                 .replace(/\\t/g, '')         // 移除制表符
                 .replace(/\\r/g, '');        // 移除回车符
 
@@ -150,19 +158,31 @@ const getResponseJson = async (page, id, interval = 3000) => {
 }
 
 const clickDialogConfirmButton = async (page) => {
-    try {
-        const dialogConfirmButton = await page.locator(DIALOG_CONFIRM_BUTTON_CLASS_NAME).first();
-        await dialogConfirmButton.waitFor({ timeout: 5000 });
-        if (await dialogConfirmButton.count() > 0) {
+    const maxAttempts = 5;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+            const dialogConfirmButton = await page.locator(DIALOG_CONFIRM_BUTTON_CLASS_NAME).first();
+            const count = await dialogConfirmButton.count();
+
+            if (count === 0) {
+                console.log(`第 ${attempt}/${maxAttempts} 次查找确认按钮：未找到，稍后重试`);
+                await sleep(1000);
+                continue;
+            }
+
+            // 等待按钮可见
+            await dialogConfirmButton.waitFor({ timeout: 3000 });
             await dialogConfirmButton.click();
             console.log('点击确认按钮');
             await sleep(1000);
-        } else {
-            console.log('确认按钮未找到');
+            return; // 点击成功，直接返回
+        } catch (error) {
+            console.log(`第 ${attempt}/${maxAttempts} 次点击确认按钮失败：${error.message}`);
+            await sleep(1000);
         }
-    } catch (error) {
-        console.log('确认按钮未找到或点击失败，继续执行:', error.message);
     }
+
+    console.log('多次尝试后仍未找到或无法点击确认按钮，跳过继续执行');
 }
 
 export { gotoCoZiPage, inputPrompt, getResponseJson, clickDialogConfirmButton };

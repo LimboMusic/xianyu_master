@@ -39,6 +39,33 @@ export async function exportToExcelFile(data, filename, id = 'linkUrl') {
     }
 
     const ws = XLSX.utils.json_to_sheet(finalData);
+
+    // 为包含“标题”的列开启自动换行（wrapText），让有 \n 的内容在单元格内按多行显示
+    const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:A1');
+    let titleColIndex = null;
+    const headerRow = range.s.r; // 表头行下标
+
+    for (let C = range.s.c; C <= range.e.c; C++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: headerRow, c: C });
+        const cell = ws[cellAddress];
+        if (cell && (cell.v === '标题' || cell.v === 'title')) {
+            titleColIndex = C;
+            break;
+        }
+    }
+
+    if (titleColIndex !== null) {
+        for (let R = headerRow + 1; R <= range.e.r; R++) {
+            const cellAddress = XLSX.utils.encode_cell({ r: R, c: titleColIndex });
+            const cell = ws[cellAddress];
+            if (cell && typeof cell.v === 'string' && cell.v.includes('\n')) {
+                cell.s = cell.s || {};
+                cell.s.alignment = cell.s.alignment || {};
+                cell.s.alignment.wrapText = true;
+            }
+        }
+    }
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
 

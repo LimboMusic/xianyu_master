@@ -206,11 +206,33 @@ async function getImageUrls(page, is_multiple = true) {
 }
 
 async function gotoNextPage(page) {
-  await page
-    .locator(".search-pagination-arrow-container--lt2kCP6J")
-    .nth(1)
-    .click();
-  await sleep(5000);
+  try {
+    const nextButton = page
+      .locator(".search-pagination-arrow-container--lt2kCP6J")
+      .last();
+    
+    // 检查按钮是否存在
+    const count = await nextButton.count();
+    if (count === 0) {
+      console.log("Next page button not found, skipping...");
+      return;
+    }
+    
+    // 检查按钮是否可用（未禁用）
+    const isEnabled = await nextButton.isEnabled().catch(() => false);
+    if (!isEnabled) {
+      console.log("Next page button is disabled, skipping...");
+      return;
+    }
+    
+    // 如果按钮可用，尝试点击
+    await nextButton.click({ timeout: 5000 });
+    await sleep(5000);
+  } catch (error) {
+    // 捕获任何错误（包括超时、元素不可用等），不抛出，继续执行
+    console.log(`Warning: Failed to go to next page: ${error.message}, continuing...`);
+    return;
+  }
 }
 
 async function extractItemId(url) {
