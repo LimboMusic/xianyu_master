@@ -31,7 +31,14 @@ export class Browser {
         }
     }
 
-    async connectToExistingBrowser(port = 9222) {
+    /**
+     * 通过 CDP 连接本机已打开的 Chrome（默认端口 9222）
+     * @param {number} port 远程调试端口
+     * @param {{ newTab?: boolean }} [options]
+     * @param {boolean} [options.newTab=true] 为 true 时每次脚本都新开一个标签页再操作（不占用你当前正在看的那个 tab）；为 false 时沿用旧逻辑，用已有第一个标签页
+     */
+    async connectToExistingBrowser(port = 9222, options = {}) {
+        const { newTab = true } = options;
         try {
             // 先尝试 IPv4 地址，Windows 上更稳定
             let wsEndpoint;
@@ -45,11 +52,17 @@ export class Browser {
             const contexts = this.browser.contexts();
             if (contexts.length > 0) {
                 this.context = contexts[0];
-                const pages = this.context.pages();
-                if (pages.length > 0) {
-                    this.page = pages[0]; // 使用第一个已有的页面
-                } else {
+                if (newTab) {
                     this.page = await this.context.newPage();
+                    console.log('已连接现有浏览器，并新开标签页用于自动化');
+                } else {
+                    const pages = this.context.pages();
+                    if (pages.length > 0) {
+                        this.page = pages[0]; // 使用第一个已有的页面
+                    } else {
+                        this.page = await this.context.newPage();
+                    }
+                    console.log('已连接现有浏览器，使用已有标签页');
                 }
             } else {
                 this.context = this.browser.contexts()[0] || await this.browser.newContext();
@@ -131,6 +144,8 @@ export class Browser {
 
                 await this.page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
                 await sleep(3000);
+                // 连接已有浏览器时，焦点可能在别的标签页，需切到本页才能看到跳转与后续点击
+                await this.page.bringToFront().catch(() => {});
                 return this.page; // 成功导航，返回页面
             } catch (error) {
                 retryCount++;
