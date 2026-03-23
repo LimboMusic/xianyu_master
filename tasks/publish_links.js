@@ -6,12 +6,17 @@ import {
     getNextPublishTime,
     recordPublish,
     getTodayCount,
-    getTodayRemainingCount,
     getTodayRecords,
     getLastPublishTime,
 } from '../store/index.js';
 import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import * as XLSX from 'xlsx';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+/** 本地图片路径（Node 不能用 import 加载 .jpg） */
+const PROCESS_IMG_PATH = path.join(__dirname, '..', 'input', 'process_img.jpg');
 
 const data = fs.readFileSync('input/汇总_资源.xlsx');
 const workbook = XLSX.read(data, { type: 'buffer' });
@@ -45,7 +50,6 @@ async function publishLinks(data) {
     const title = data['标题']
     const description = data['标题']
     const image = data['图片']
-    // 获取下一个发布时间（如果今天已满5次，会自动安排到明天）
     const nextPublishInfo = getNextPublishTime();
     const scheduledTime = nextPublishInfo.time;
     const scheduledDate = nextPublishInfo.date;
@@ -53,11 +57,10 @@ async function publishLinks(data) {
     const isToday = scheduledDate === today;
 
     console.log(`\n📅 计划发布时间: ${scheduledTime}`);
-    console.log(`📊 今天已安排: ${getTodayCount()}，剩余: ${getTodayRemainingCount()} 次`);
+    console.log(`📊 今天已记录安排: ${getTodayCount()} 次`);
 
-    // 如果今天已满5次，新发布的内容会自动安排到明天
     if (!isToday) {
-        console.log(`ℹ️  今天已安排满5次，本次发布将安排到: ${scheduledDate}`);
+        console.log(`ℹ️  定时日期: ${scheduledDate}`);
     }
 
     // 记录实际开始时间
@@ -86,6 +89,8 @@ async function publishLinks(data) {
     await clickNextButton(page);
     await sleep(2000)
     await uploadImage(page, image, true);
+    await sleep(1000)
+    await uploadImage(page, PROCESS_IMG_PATH, false);
     await sleep(1000)
     await fillTitle(page, title.slice(0, 30));
     await sleep(500)
@@ -124,7 +129,7 @@ async function publishLinks(data) {
     console.log(`✓ 发布成功！`);
     console.log(`   实际发布时间: ${actualEndTime}`);
     console.log(`   定时发布时间: ${scheduledTime}`);
-    console.log(`   今天已发布: ${getTodayCount()}/5`);
+    console.log(`   今天已记录安排: ${getTodayCount()} 次`);
 
     return true;
 }
@@ -140,8 +145,7 @@ async function runPublishLoop() {
         console.log('这是第一次发布');
     }
 
-    console.log(`今天已发布: ${getTodayCount()}/5`);
-    console.log(`剩余次数: ${getTodayRemainingCount()} 次\n`);
+    console.log(`今天已记录安排: ${getTodayCount()} 次\n`);
 
     // 显示今天的发布记录
     const todayRecords = getTodayRecords();
@@ -159,7 +163,6 @@ async function runPublishLoop() {
     for (let i = 0; i < data_list.length; i++) {
         try {
             const item = data_list[i];
-            // 继续运行，getNextPublishTime() 会自动将超过5次的部分安排到明天
             const success = await publishLinks(item);
             if (success) {
                 successCount++;
@@ -181,7 +184,7 @@ async function runPublishLoop() {
     console.log('\n=== 发布任务完成 ===');
     console.log(`成功发布: ${successCount} 次`);
     console.log(`失败: ${failCount} 次`);
-    console.log(`今天已安排: ${getTodayCount()}/5 次`);
+    console.log(`今天已记录安排: ${getTodayCount()} 次`);
 
     // 显示下次可发布时间
     const nextPublishInfo = getNextPublishTime();

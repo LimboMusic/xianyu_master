@@ -15,6 +15,11 @@ import {
 const url = 'https://m.tb.cn/h.7fhgjkr?tk=mvsCfC5KhNt'
 const shop_name = '咕咕资源库'
 
+const USE_EXISTING_BROWSER = true;
+const CHORME_STARTER_NAME = "start_chrome.bat";
+/** 连接本机 Chrome 前若 9222 无 CDP，则自动运行项目根目录的 start_chrome.bat（仅 Windows） */
+const AUTO_START_CHROME_BAT = true;
+
 const result_list = [];
 const browser = new Browser();
 const output_dir = `output/${dayjs().format("YYYY-MM-DD")}/店铺所有链接数据`;
@@ -22,6 +27,11 @@ fs.mkdirSync(output_dir, { recursive: true });
 
 async function getShopLinks(url, shop_name) {
   try {
+    await ensureChromeRemoteDebugging({
+      enabled: USE_EXISTING_BROWSER && AUTO_START_CHROME_BAT,
+      batPath: path.resolve(CHORME_STARTER_NAME),
+    });
+    await sleep(2000);
     await browser.launchBrowser();
     const page = await browser.navigateWithRetry(url);
 

@@ -7,7 +7,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const STORE_FILE = path.join(__dirname, 'publish_records.json');
-const DAILY_LIMIT = 7; // 每天最多上传次数
+
+const INTERVAL_TIME = 5; // 间隔时间，单位：小时
 
 /**
  * 读取存储文件
@@ -76,78 +77,21 @@ export function getLastPublishDate() {
 }
 
 /**
- * 计算下一个发布时间
- * 基于最后一次发布时间，如果今天还没发够5条就在今天发，否则往后推
- * @returns {Object} 包含发布时间和日期的对象
+ * 计算下一个定时发布时间
+ * - 基准时间 base：有 lastPublishTime 且其晚于当前时刻 → 用 lastPublishTime；否则（无记录、或已早于/等于现在）→ 用当前时刻
+ * - 下次发布时间 = base + INTERVAL_TIME（小时）
+ * @returns {{ date: string, time: string, timestamp: number }}
  */
 export function getNextPublishTime() {
     const store = readStore();
-    const now = dayjs().add(15,'minutes');
-    const today = now.format('YYYY-MM-DD');
-    
-    // 如果没有发布记录，从今天开始，延迟2小时
-    if (!store.lastPublishTime) {
-        const firstPublishTime = now.add(4, 'hour').format('YYYY-MM-DD HH:mm:ss');
-        return {
-            date: today,
-            time: firstPublishTime,
-            timestamp: now.valueOf()
-        };
-    }
+    const now = dayjs();
 
-    // 如果最后一次发布时间早于当前时间，则返回当前时间
-    if (dayjs(store.lastPublishTime).isBefore(now)) {
-        return {
-            date: today,
-            time: now.add(15,'minute').format('YYYY-MM-DD HH:mm:ss'),
-            timestamp: now.add(15,'minute').valueOf()
-        };
-    }
-    
-    // 获取最后一次发布的日期
-    const lastPublishDate = dayjs(store.lastPublishTime).format('YYYY-MM-DD');
-    const todayCount = getDateCount(today);
-    
-    // 如果今天还没发够5条，就在今天发布
-    if (todayCount < DAILY_LIMIT) {
-        // 计算今天下一个发布时间（距离上次发布至少间隔一段时间）
-        const lastTime = dayjs(store.lastPublishTime);
-        let nextTime = now.add(15,'minute');
-        
-        // 如果最后一次发布是今天，至少间隔2小时
-        if (lastPublishDate === today) {
-            nextTime = lastTime.add(4, 'hour');
-        }
-        
-        return {
-            date: today,
-            time: nextTime.format('YYYY-MM-DD HH:mm:ss'),
-            timestamp: nextTime.valueOf()
-        };
-    }
-    
-    // 如果今天已经发够5条，从明天开始
-    let nextDate = dayjs().add(1, 'day');
-    let nextTime = nextDate.hour(9).minute(0).second(0); // 默认明天早上9点
-    
-    // 如果最后一次发布是今天，从明天开始
-    // 如果最后一次发布是更早的日期，检查那个日期是否还有剩余次数
-    if (lastPublishDate !== today) {
-        const lastDateCount = getDateCount(lastPublishDate);
-        if (lastDateCount < DAILY_LIMIT) {
-            // 如果最后一次发布的日期还有剩余次数，继续在那个日期发布
-            nextDate = dayjs(lastPublishDate);
-            const lastTime = dayjs(store.lastPublishTime);
-            nextTime = lastTime.add(4, 'hour');
-            // 如果计算出的时间已经过了，就用当前时间
-            if (nextTime.isBefore(now)) {
-                nextTime = now;
-            }
-        }
-    }
-    
+    const last = store.lastPublishTime ? dayjs(store.lastPublishTime) : null;
+    const base = last && last.isAfter(now) ? last : now;
+    const nextTime = base.add(INTERVAL_TIME, 'hour');
+
     return {
-        date: nextDate.format('YYYY-MM-DD'),
+        date: nextTime.format('YYYY-MM-DD'),
         time: nextTime.format('YYYY-MM-DD HH:mm:ss'),
         timestamp: nextTime.valueOf()
     };
@@ -190,30 +134,12 @@ export function recordPublish(publishInfo = {}) {
 }
 
 /**
- * 获取今天已发布的次数
- * @returns {number} 今天已发布的次数
+ * 获取今天已记录的安排次数（仅统计，无上限）
+ * @returns {number}
  */
 export function getTodayCount() {
     const today = dayjs().format('YYYY-MM-DD');
     return getDateCount(today);
-}
-
-/**
- * 检查今天是否还能发布
- * @returns {boolean} true表示可以发布，false表示已达到限制
- */
-export function canPublishToday() {
-    const todayCount = getTodayCount();
-    return todayCount < DAILY_LIMIT;
-}
-
-/**
- * 获取今天的剩余发布次数
- * @returns {number} 剩余次数
- */
-export function getTodayRemainingCount() {
-    const todayCount = getTodayCount();
-    return Math.max(0, DAILY_LIMIT - todayCount);
 }
 
 /**

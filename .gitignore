@@ -1,3 +1,7 @@
+output/
+
+publish_records.json
+
 # Dependencies
 node_modules/
 npm-debug.log*

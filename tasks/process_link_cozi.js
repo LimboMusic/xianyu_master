@@ -15,13 +15,13 @@ async function testCoZi(data) {
     } else {
         await browser.launchBrowser();
     }
-    const page = await browser.navigateWithRetry('https://space.coze.cn/task/7596634776796037411');
+    const page = await browser.navigateWithRetry('https://www.coze.cn/task/7620134599766868250');
     let counter = 0
     try {
         for (const row of data) {
             counter++;
             console.log(`Processing row ${counter} of ${data.length}`);
-            const str = row['标题'] + `图片：${row['图片']}` + `\n       id:${row['id']}`;
+            const str = row['标题'] + `图片：https://${row['图片']}` + `\n       id:${row['id']}`;
             await inputPrompt(page, str);
             await clickDialogConfirmButton(page);
             const response = await getResponseJson(page, row['id']);
@@ -34,7 +34,7 @@ async function testCoZi(data) {
     } catch (error) {
         console.log(`Error: ${error.message}`);
     } finally {
-        await exportToExcelFile(result_list, path.resolve('output',`${dayjs().format('YYYY-MM-DD')}_cozi_result.xlsx`), 'id');
+        await exportToExcelFile(result_list, path.resolve('output',`${dayjs().format('YYYY-MM-DD')}/cozi_result_${dayjs().format('YYYY-MM-DD')}.xlsx`), 'id');
     }
 }
 

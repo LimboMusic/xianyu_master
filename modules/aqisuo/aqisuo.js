@@ -53,6 +53,21 @@ export async function clickNextButton(page) {
 }
 
 export async function uploadImage(page, imageUrl = null,blur = false) {
+    // 无协议的 CDN 地址（如 img.alicdn.com/...）需在 blur / 下载前补全为 https://
+    // 不处理本地路径：首节无点号的相对路径（如 output/image.png）、盘符路径等
+    if (imageUrl) {
+        if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+            const firstSeg = String(imageUrl).split(/[/\\]/)[0] || '';
+            const looksLikeHost =
+                firstSeg.includes('.') &&
+                !firstSeg.startsWith('.') &&
+                !/^[a-zA-Z]:/.test(imageUrl);
+            if (looksLikeHost) {
+                imageUrl = 'https://' + imageUrl.replace(/^\/*/, '');
+            }
+        }
+    }
+
     if (blur) {
         imageUrl = await blurWatermark(imageUrl,'output/image.png');
     }

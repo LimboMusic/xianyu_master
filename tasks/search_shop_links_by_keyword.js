@@ -15,10 +15,19 @@ import {
   gotoNextPage,
   extractItemId,
 } from "../modules/shop_data/shop_data.js";
+import { ensureChromeRemoteDebugging } from "../utils/chrome_remote_debug.js";
 
-const keyword = "ppt模板";
+const keyword = "真题电子";
+
+
+
 
 const USE_EXISTING_BROWSER = true
+
+const CHORME_STARTER_NAME = "start_chrome.bat";
+
+/** 连接本机 Chrome 前若 9222 无 CDP，则自动运行项目根目录的 start_chrome.bat（仅 Windows） */
+const AUTO_START_CHROME_BAT = true;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -71,6 +80,11 @@ function ensureOutputDir(relativePath, baseDir = path.join(__dirname, "..")) {
 }
 
 async function getShopLinks(url, keyword) {
+  await ensureChromeRemoteDebugging({
+    enabled: USE_EXISTING_BROWSER && AUTO_START_CHROME_BAT,
+    batPath: path.resolve(CHORME_STARTER_NAME),
+  });
+  await sleep(2000);
   // 在函数内部初始化，避免顶层执行导致段错误
   const result_list = [];
   const browser = new Browser();

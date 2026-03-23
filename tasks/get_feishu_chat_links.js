@@ -4,17 +4,29 @@ import { getMessageList, clickChatGroup, scrollChatContainer, debugMessageElemen
 import { exportToExcelFile } from "../utils/file.js";
 import dayjs from "dayjs";
 import fs from "fs";
+import path from "path";
+import { ensureChromeRemoteDebugging } from "../utils/chrome_remote_debug.js";
 
 const loop_count = 100;
+
+const CHORME_STARTER_NAME = "start_chrome.bat";
 
 const USE_EXISTING_BROWSER = true;
 const DEBUG_MODE = process.argv.includes('--debug'); // 通过命令行参数启用调试模式
 const output_dir = `output/${dayjs().format("YYYY-MM-DD")}/飞书聊天链接`;
 fs.mkdirSync(output_dir, { recursive: true });
 
+/** 连接本机 Chrome 前若 9222 无 CDP，则自动运行项目根目录的 start_chrome.bat（仅 Windows） */
+const AUTO_START_CHROME_BAT = true;
+
 const url = "https://fqacf6r7ojb.feishu.cn/next/messenger/?from=messenger_banner_login&app_id=11";
 
 async function getFeishuChatLinks(url) {
+    await ensureChromeRemoteDebugging({
+        enabled: USE_EXISTING_BROWSER && AUTO_START_CHROME_BAT,
+        batPath: path.resolve(CHORME_STARTER_NAME),
+    });
+    await sleep(2000);
     const browser = new Browser();
     if (USE_EXISTING_BROWSER) {
         await browser.connectToExistingBrowser();

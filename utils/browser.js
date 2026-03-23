@@ -45,17 +45,14 @@ export class Browser {
             const contexts = this.browser.contexts();
             if (contexts.length > 0) {
                 this.context = contexts[0];
-                const pages = this.context.pages();
-                if (pages.length > 0) {
-                    this.page = pages[0]; // 使用第一个已有的页面
-                } else {
-                    this.page = await this.context.newPage();
-                }
             } else {
-                this.context = this.browser.contexts()[0] || await this.browser.newContext();
-                this.page = await this.context.newPage();
+                this.context = await this.browser.newContext();
             }
-            console.log('成功连接到现有浏览器');
+
+            this.page = await this.context.newPage();
+            await this.page.goto('about:blank');
+
+            console.log('成功连接到现有浏览器（已新开空白标签页）');
         } catch (error) {
             console.error(`连接到现有浏览器失败: ${error.message}`);
             console.log('将启动新浏览器...');
