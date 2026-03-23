@@ -11,6 +11,11 @@ async function downloadImage(url) {
 }
 
 async function blurWatermark(inputPath, outputPath) {
+    // 若为无协议的 CDN/域名路径（如 img.alicdn.com/...），补上 https://
+    const pathStr = String(inputPath).trim();
+    if (!pathStr.startsWith('http://') && !pathStr.startsWith('https://') && /^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}\//.test(pathStr)) {
+        inputPath = 'https://' + pathStr;
+    }
     // 判断是否为网络 URL
     let imageBuffer;
     if (inputPath.startsWith('http://') || inputPath.startsWith('https://')) {

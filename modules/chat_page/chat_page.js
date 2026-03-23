@@ -1,6 +1,8 @@
 import { sleep } from "../../utils/utils.js";
 
 const CHAT_BOX_CLASS_NAME = "textarea[placeholder='请输入消息，按Enter键发送或点击发送按钮发送']";
+// 小红点数字（易点在视口外或被整页层拦截点击）；优先点整条会话行
+const CONVERSATION_ITEM_CLASS_NAME = ".conversation-item--JReyg97P";
 const CHAT_RED_POINT_CLASS_NAME = ".conversation-item--JReyg97P .ant-scroll-number.ant-badge-count.ant-badge-count-sm";
 const CHAT_HEAD_TEXT_CLASS_NAME = ".container--dgZTBkgv";
 const MESSAGE_CLASS_NAME = ".ant-list-items >div";
@@ -28,10 +30,26 @@ async function sendMessage(page, message = 'zhi顶，谢谢啦') {
 }
 
 async function clickChatRedPoint(page) {
-    const chatRedPointCount = page.locator(CHAT_RED_POINT_CLASS_NAME).count();
-    const chatRedPointLocator = page.locator(CHAT_RED_POINT_CLASS_NAME).first();
-    if ((await chatRedPointLocator.count()) > 0) {
-        await chatRedPointLocator.click();;
+    // 有未读角标的会话行（比点小角标本体更易点、少被 html 层拦截）
+    const rowWithBadge = page
+        .locator(CONVERSATION_ITEM_CLASS_NAME)
+        .filter({ has: page.locator(".ant-badge-count") });
+    const chatRedPointCount = await page.locator(CHAT_RED_POINT_CLASS_NAME).count();
+
+    if (chatRedPointCount > 0) {
+        const target = (await rowWithBadge.count()) > 0 ? rowWithBadge.first() : page.locator(CHAT_RED_POINT_CLASS_NAME).first();
+        await target.scrollIntoViewIfNeeded();
+        await sleep(300);
+        try {
+            await target.click({ timeout: 15000 });
+        } catch (e) {
+            // 仍被遮罩/整页拦截时，对会话行用 force 或 JS 点击兜底
+            try {
+                await target.click({ timeout: 10000, force: true });
+            } catch (e2) {
+                await target.evaluate((el) => el.click());
+            }
+        }
     }
     return chatRedPointCount;
 }
@@ -113,4 +131,5 @@ export {
     scrollVirtualListByWheel,
     scrollDownMessageList,
     getUserName,
+    CONVERSATION_ITEM_CLASS_NAME,
 };
