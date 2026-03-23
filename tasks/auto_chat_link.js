@@ -3,6 +3,7 @@ import { goToChatPage, getUserName } from "../modules/shop_data/shop_data.js";
 import { sleep } from "../utils/utils.js";
 import { extractLikeLinks } from "../utils/extract_like_links.js";
 import path from "path";
+import { ensureChromeRemoteDebugging } from "../utils/chrome_remote_debug.js";
 import {
   getChatMessageListLength,
   sendMessage,
@@ -10,12 +11,16 @@ import {
 import { exportToExcelFile } from "../utils/file.js";
 import dayjs from "dayjs";
 
+const CHORME_STARTER_NAME = "start_chrome.bat";
+
 let DEFAULT_MESSAGE = "";
 const ADDTIONAL_MESSAGE = "";
 const userList = []
 // DEFAULT_MESSAGE = "zhi顶，谢谢啦";
 
 const USE_EXISTING_BROWSER = true;
+/** 连接本机 Chrome 前若 9222 无 CDP，则自动运行项目根目录的 start_chrome.bat（仅 Windows） */
+const AUTO_START_CHROME_BAT = true;
 
 const message_list = [
   "现在还有货吗？zhi顶，谢谢啦",
@@ -38,6 +43,13 @@ const message_list = [
 
 async function autoChatLink(items, excelFilePath, intervalMs = 3000) {
   const itemList = Array.isArray(items) ? items : [items];
+
+  await ensureChromeRemoteDebugging({
+    enabled: USE_EXISTING_BROWSER && AUTO_START_CHROME_BAT,
+    batPath: path.resolve(CHORME_STARTER_NAME),
+  });
+
+  await sleep(2000);
 
   const browser = new Browser();
   if (USE_EXISTING_BROWSER) {

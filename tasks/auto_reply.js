@@ -8,6 +8,8 @@ import {
   sendMessage,
   CONVERSATION_ITEM_CLASS_NAME,
 } from "../modules/chat_page/chat_page.js";
+import path from "path";
+import { ensureChromeRemoteDebugging } from "../utils/chrome_remote_debug.js";
 
 const url =
   "https://www.goofish.com/im?spm=a21ybx.home.sidebar.2.4c053da6TfOP2U";
@@ -17,8 +19,8 @@ const ADDTIONAL_MESSAGE = "";
 // DEFAULT_MESSAGE = "来啦";
 
 const USE_EXISTING_BROWSER = true;
-/** 连接已有 Chrome 时是否新开标签页（默认在 browser.js 里为 true，与旧版「只占第一个 tab」不同） */
-const CONNECT_NEW_TAB = true;
+/** 连接本机 Chrome 前若 9222 无 CDP，则自动运行项目根目录的 start_chrome.bat（仅 Windows） */
+const AUTO_START_CHROME_BAT = true;
 
 const message_list = [
   "来啦",
@@ -33,6 +35,11 @@ const message_list = [
 ];
 
 async function autoReply(url) {
+  await ensureChromeRemoteDebugging({
+    enabled: USE_EXISTING_BROWSER && AUTO_START_CHROME_BAT,
+    batPath: path.resolve(CHORME_STARTER_NAME),
+  });
+  await sleep(2000);
   const browser = new Browser();
   if (USE_EXISTING_BROWSER) {
     await browser.connectToExistingBrowser(9222, { newTab: CONNECT_NEW_TAB });
@@ -65,7 +72,8 @@ async function autoReply(url) {
       `Consecutive zero count: ${consecutiveZeroCount}/${MAX_CONSECUTIVE_ZERO}`,
     );
     await sleep(1000);
-    if (chatRedPointCount > 0 && chatHeadText.length > 0) {
+    if ( chatHeadText.length > 0) {
+      console.log(`Chat head text: ${chatHeadText}`);
       if (
         !/提醒收货|取消订单|直接买|去评价|交易中|去购买|立即购买|提醒发货|确认收货|购买|购|买/.test(
           chatHeadText,

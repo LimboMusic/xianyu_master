@@ -48,6 +48,10 @@ const questions = [
       {
         name: '预制资源处理任务 (process_link_cozi.js)',
         value: 'tasks/process_link_cozi.js'
+      },
+      {
+        name:'每日链接数据更新(get_shop_link_date_data.js)',
+        value: 'tasks/get_shop_link_date_data.js'
       }
     ]
   }

@@ -1,3 +1,7 @@
+output/
+
+publish_records.json
+
 # Dependencies
 node_modules/
 npm-debug.log*
@@ -125,6 +129,10 @@ Desktop.ini
 
 # Excel and other data files (uncomment if needed)
 # *.xlsx
+# 本地数据表，不参与合并与提交
+input/汇总_点赞链接.xlsx
+input/汇总_资源.xlsx
+input/点赞_用户列表.xlsx
 # *.xls
 # *.csv
 
