@@ -1,7 +1,9 @@
+# 脚本运行输出产物
 output/
 input/
 
-publish_records.json
+# 发布记录为本地数据，仓库仅保留 publish_records.json.example 空模板
+store/publish_records.json
 
 # Dependencies
 node_modules/
