@@ -90,88 +90,93 @@ async function publishLinks(data) {
     await browser.launchBrowser();
   }
 
-  const page = await browser.navigateWithRetry(
-    "https://aldsidle.agiso.com/#/goodsManage/goodsList/goodsRelease",
-  );
-  await page.waitForLoadState("networkidle");
-
-  await sleep(1000);
-  // 等待关闭按钮出现并点击
-  // try {
-  //     await page.waitForSelector('span[aria-label="close-circle"]', { timeout: 2000 });
-  //     await page.locator('span[aria-label="close-circle"]').first().click();
-  // } catch (error) {
-  //     console.log(`Warning: Close button not found or failed to click: ${error.message}`);
-  // }
-  await sleep(1000);
-  let category = false;
-  for (let attempt = 0; attempt < MAX_CATEGORY_SELECT_RETRIES; attempt++) {
-    category = await selectCategory(page);
-    console.log(
-      "category",
-      category,
-      `attempt ${attempt + 1}/${MAX_CATEGORY_SELECT_RETRIES}`,
-    );
-    if (category) break;
-    if (attempt < MAX_CATEGORY_SELECT_RETRIES - 1) {
-      console.log("分类未就绪，刷新页面后重试…");
-      await page.reload({ waitUntil: "networkidle" });
-      await sleep(1000);
-    }
-  }
-  if (!category) {
-    console.error("selectCategory 多次重试后仍失败，跳过本条");
-    return false;
-  }
-  await sleep(2000);
-  await clickNextButton(page);
-  await sleep(2000);
-  await uploadImage(page, image, true);
-  await sleep(1000);
-  await uploadImage(page, PROCESS_IMG_PATH, false);
-  await sleep(1000);
-  await fillTitle(page, title.slice(0, 30));
-  await sleep(500);
-  await fillDescription(page, description);
-  await sleep(500);
-  await fillAddress(page);
-  await sleep(500);
-  await fillPrice(page);
-  await sleep(500);
-  await fillInventory(page);
-  await sleep(1000);
-  // 使用计算出的定时发布时间
-  await clickTimedPublishRadio(page, scheduledTime);
-  await sleep(1000);
-  await fillOuterId(page, outerId);
-  await sleep(1000);
-  await clickServiceCheckboxs(page);
-  await sleep(1000);
-  await clickSubmitButton(page);
-  await sleep(1000);
+  let page;
   try {
-    await page.waitForSelector(".ant-modal-footer button", { timeout: 5000 });
-    await page.locator(".ant-modal-footer button").last().click();
-  } catch (error) {
-    console.log(
-      `Warning: Close button not found or failed to click: ${error.message}`,
+    page = await browser.navigateWithRetry(
+      "https://aldsidle.agiso.com/#/goodsManage/goodsList/goodsRelease",
     );
+    await page.waitForLoadState("networkidle");
+
+    await sleep(1000);
+    await sleep(1000);
+    let category = false;
+    for (let attempt = 0; attempt < MAX_CATEGORY_SELECT_RETRIES; attempt++) {
+      category = await selectCategory(page);
+      console.log(
+        "category",
+        category,
+        `attempt ${attempt + 1}/${MAX_CATEGORY_SELECT_RETRIES}`,
+      );
+      if (category) break;
+      if (attempt < MAX_CATEGORY_SELECT_RETRIES - 1) {
+        console.log("分类未就绪，刷新页面后重试…");
+        await page.reload({ waitUntil: "networkidle" });
+        await sleep(1000);
+      }
+    }
+    if (!category) {
+      console.error("selectCategory 多次重试后仍失败，跳过本条");
+      return false;
+    }
+    await sleep(2000);
+    await clickNextButton(page);
+    await sleep(2000);
+    await uploadImage(page, image, true);
+    await sleep(1000);
+    await uploadImage(page, PROCESS_IMG_PATH, false);
+    await sleep(1000);
+    await fillTitle(page, title.slice(0, 30));
+    await sleep(500);
+    await fillDescription(page, description);
+    await sleep(500);
+    await fillAddress(page);
+    await sleep(500);
+    await fillPrice(page);
+    await sleep(500);
+    await fillInventory(page);
+    await sleep(1000);
+    // 使用计算出的定时发布时间
+    await clickTimedPublishRadio(page, scheduledTime);
+    await sleep(1000);
+    await fillOuterId(page, outerId);
+    await sleep(1000);
+    await clickServiceCheckboxs(page);
+    await sleep(1000);
+    await clickSubmitButton(page);
+    await sleep(1000);
+    try {
+      await page.waitForSelector(".ant-modal-footer button", { timeout: 5000 });
+      await page.locator(".ant-modal-footer button").last().click();
+    } catch (error) {
+      console.log(
+        `Warning: Close button not found or failed to click: ${error.message}`,
+      );
+    }
+
+    // 记录发布成功（不依赖页面，先于关闭标签页）
+    const actualEndTime = dayjs().format("YYYY-MM-DD HH:mm:ss");
+    recordPublish({
+      actualTime: actualEndTime,
+      scheduledTime: scheduledTime,
+    });
+
+    console.log(`✓ 发布成功！`);
+    console.log(`   实际发布时间: ${actualEndTime}`);
+    console.log(`   定时发布时间: ${scheduledTime}`);
+    console.log(`   今天已记录安排: ${getTodayCount()} 次`);
+
+    return true;
+  } finally {
+    if (page) {
+      try {
+        await page.close();
+        console.log("已关闭当前发布标签页");
+      } catch (e) {
+        console.log(`关闭标签页失败: ${e.message}`);
+      }
+    }
+    await sleep(5000);
   }
-  await sleep(5000);
-
-  // 记录发布成功
-  const actualEndTime = dayjs().format("YYYY-MM-DD HH:mm:ss");
-  recordPublish({
-    actualTime: actualEndTime,
-    scheduledTime: scheduledTime,
-  });
-
-  console.log(`✓ 发布成功！`);
-  console.log(`   实际发布时间: ${actualEndTime}`);
-  console.log(`   定时发布时间: ${scheduledTime}`);
-  console.log(`   今天已记录安排: ${getTodayCount()} 次`);
-
-  return true;
 }
 
 async function runPublishLoop() {
