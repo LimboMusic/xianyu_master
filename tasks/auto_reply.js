@@ -18,6 +18,7 @@ let DEFAULT_MESSAGE = "";
 const ADDTIONAL_MESSAGE = "";
 // DEFAULT_MESSAGE = "来啦";
 
+const CHORME_STARTER_NAME = "start_chrome.bat";
 const USE_EXISTING_BROWSER = true;
 /** 连接本机 Chrome 前若 9222 无 CDP，则自动运行项目根目录的 start_chrome.bat（仅 Windows） */
 const AUTO_START_CHROME_BAT = true;
@@ -42,7 +43,7 @@ async function autoReply(url) {
   await sleep(2000);
   const browser = new Browser();
   if (USE_EXISTING_BROWSER) {
-    await browser.connectToExistingBrowser(9222, { newTab: CONNECT_NEW_TAB });
+    await browser.connectToExistingBrowser();
   } else {
     await browser.launchBrowser();
   }
