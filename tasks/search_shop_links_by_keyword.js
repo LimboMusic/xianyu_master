@@ -110,7 +110,7 @@ async function getShopLinks(url, keyword) {
     while (count === 0 && retryCount < 10) {
       page = await browser.navigateWithRetry(url);
       count = await page
-        .locator('.feeds-item-wrap--rGdH_KoF:not([id="selected"])')
+        .locator('.feeds-item-wrap--rGdH_KoF')
         .count();
       console.log("Initial count:", count);
       await sleep(1000);
@@ -121,13 +121,53 @@ async function getShopLinks(url, keyword) {
     const maxProcessedPerSession = 999999; // 限制单次处理数量，避免资源耗尽
     await browser.ensurePageValid(url);
 
-    while (count > 1 && processedCount < maxProcessedPerSession) {
+    // 每次循环从 browser.page 获取最新 page 引用，防止 ensurePageValid 重建后变量失效
+    const getPage = () => browser.page;
+
+    // 记录连续同一元素处理失败的次数，如果反复失败则尝试翻页
+    let stuckRetryCount = 0;
+    const MAX_STUCK_RETRY = 5;
+
+    while (count >= 1 && processedCount < maxProcessedPerSession) {
+      // 获取最新 page 引用（ensurePageValid 可能重建了 page）
+      page = getPage();
+      if (!page) {
+        console.log("Page is null, attempting to recreate...");
+        await browser.ensurePageValid(url);
+        page = getPage();
+        if (!page) {
+          console.log("Failed to recreate page, exiting loop");
+          break;
+        }
+      }
+
       // 检查页面是否仍然有效，如果无效则重新创建
       await browser.ensurePageValid(url);
+      page = getPage(); // 重新获取 page 引用
       await sleep(1000);
+
       count = await page
         .locator('.feeds-item-wrap--rGdH_KoF:not([id="selected"])')
         .count();
+
+      // 如果没有未处理的元素，尝试翻页
+      if (count === 0) {
+        console.log("No more unprocessed elements, trying next page...");
+        await gotoNextPage(page);
+        await sleep(5000);
+        // 翻页后重新统计
+        count = await page
+          .locator('.feeds-item-wrap--rGdH_KoF:not([id="selected"])')
+          .count();
+        if (count === 0) {
+          console.log("No new elements found after page turn, exiting loop");
+          break;
+        }
+        console.log(`Found ${count} elements on next page, continuing...`);
+        stuckRetryCount = 0; // 重置失败计数
+        continue;
+      }
+
       try {
         const newPage = await gotoShopPage(
           page,
@@ -145,13 +185,42 @@ async function getShopLinks(url, keyword) {
             .locator('.feeds-item-wrap--rGdH_KoF:not([id="selected"])')
             .count();
           if (currentCount === 0) {
-            console.log("No more elements to process");
-            break;
+            // 先尝试翻页，而不是直接退出
+            console.log("Element disappeared, trying next page...");
+            await gotoNextPage(page);
+            await sleep(5000);
+            count = await page
+              .locator('.feeds-item-wrap--rGdH_KoF:not([id="selected"])')
+              .count();
+            if (count === 0) {
+              console.log("No more pages available, exiting loop");
+              break;
+            }
+            continue;
           } else {
-            console.log(`Page load failed for current element, but ${currentCount} elements remain. Continuing to next element.`);
+            // 检查是否反复点击同一个位置失败（卡在最后一两个元素）
+            stuckRetryCount++;
+            if (stuckRetryCount >= MAX_STUCK_RETRY) {
+              console.log(`Stuck on remaining ${currentCount} elements after ${stuckRetryCount} retries, trying next page...`);
+              await gotoNextPage(page);
+              await sleep(5000);
+              count = await page
+                .locator('.feeds-item-wrap--rGdH_KoF:not([id="selected"])')
+                .count();
+              if (count === 0) {
+                console.log("No more pages available, exiting loop");
+                break;
+              }
+              stuckRetryCount = 0;
+              continue;
+            }
+            console.log(`Page load failed for current element (retry ${stuckRetryCount}/${MAX_STUCK_RETRY}), ${currentCount} elements remain. Trying next element...`);
             continue;
           }
         }
+
+        // 成功打开新页面，重置卡住计数
+        stuckRetryCount = 0;
 
         const { reviewNumber, wantNumber } = await getReviewAndWantNumber(
           newPage
@@ -208,10 +277,6 @@ async function getShopLinks(url, keyword) {
           await exportToExcelFile(result_list, filename, "id");
         }
 
-        if (count <= 2) {
-          await gotoNextPage(page);
-        }
-
         await sleep(800);
       } catch (error) {
         console.log(`Error processing element: ${error.message}`);
@@ -226,15 +291,30 @@ async function getShopLinks(url, keyword) {
         }
 
         try {
-          // 重新计算剩余元素数量，使用与主循环相同的选择器
-          count = await page
-            .locator('.feeds-item-wrap--rGdH_KoF:not([id="selected"])')
-            .count();
-          console.log(`Error recovery - Remaining count: ${count}, Processed: ${processedCount}`);
-          if (count === 0) break;
+          // 重新获取最新 page 引用后计算剩余元素数量
+          page = getPage();
+          if (page) {
+            count = await page
+              .locator('.feeds-item-wrap--rGdH_KoF:not([id="selected"])')
+              .count();
+            console.log(`Error recovery - Remaining count: ${count}, Processed: ${processedCount}`);
+          } else {
+            console.log("Page lost after error, exiting loop");
+            break;
+          }
+          if (count === 0) {
+            // 尝试翻页
+            console.log("Error recovery - trying next page...");
+            await gotoNextPage(page);
+            await sleep(5000);
+            count = await page
+              .locator('.feeds-item-wrap--rGdH_KoF:not([id="selected"])')
+              .count();
+            if (count === 0) break;
+          }
         } catch (countError) {
           console.log(`Failed to recount elements: ${countError.message}`);
-          break; // 如果连计数都失败了，就停止
+          break;
         }
 
         await sleep(3000);
