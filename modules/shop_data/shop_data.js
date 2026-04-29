@@ -33,44 +33,101 @@ async function gotoShopPage(page, className = FIRST_CARD_CLASS_NAME) {
     // 即使高亮失败，也继续执行点击操作
   }
 
-  const context = page.context();
-  const newPagePromise = context.waitForEvent("page", { timeout: 10000 });
-  await elementLocator.click();
-
-  let newPage;
   try {
-    newPage = await newPagePromise;
-  } catch (error) {
-    if (
-      error.message.includes("Timeout") ||
-      error.message.includes("waitForEvent")
-    ) {
-      console.log(
-        `Warning: Failed to open shop page (timeout waiting for page event): ${error.message}`
-      );
-      return null; // 返回 null 表示失败，让调用方处理
-    }
-    return null;
-  }
+    const context = page.context();
+    // 用较短超时，快速检测是否打开新页面
+    const newPagePromise = context.waitForEvent("page", { timeout: 5000 }).catch((err) => {
+      // 超时正常返回 null，不抛出未捕获异常
+      return null;
+    });
 
-  try {
-    await newPage.waitForLoadState("networkidle", { timeout: 10000 });
-    return newPage;
-  } catch (error) {
-    if (
-      error.message.includes("Timeout") ||
-      error.message.includes("waitForLoadState")
-    ) {
-      console.log(
-        `Warning: Page load timeout for shop page, skipping this item: ${error.message}`
-      );
+    // 记录点击前的 URL，用于检测页面内导航（SPA 跳转）
+    const beforeUrl = page.url();
+
+    // 执行点击 - 用较短超时，点击失败快速返回
+    try {
+      await elementLocator.click({ timeout: 3000 });
+    } catch (clickError) {
+      // 点击失败，移除 selected 标记，快速返回
+      console.log(`Click failed: ${clickError.message}`);
       try {
-        await newPage.close();
-      } catch (closeError) {
-        // 忽略关闭错误
+        await elementLocator.evaluate((element) => {
+          element.id = "";
+        });
+      } catch (e) {
+        // 忽略清除失败
       }
-      return null; // 返回 null 表示失败
+      return null;
     }
+
+    // 点击后快速检查是否页面内跳转（URL 变了但没打开新标签页）
+    const afterUrl = page.url();
+    if (beforeUrl !== afterUrl) {
+      // 页面内跳转，不是新标签页，这种情况也当作"没打开新页面"处理
+      console.log(`Page navigated in same tab (SPA): ${afterUrl}`);
+      try {
+        await elementLocator.evaluate((element) => {
+          element.id = "";
+        });
+      } catch (e) {
+        // 忽略清除失败
+      }
+      return null;
+    }
+
+    // 快速检查新页面是否已经打开（检查当前页面数）
+    const contexts = context.pages();
+    if (contexts.length > 1) {
+      // 已经有新页面了，直接取最新一个
+      const latestPage = contexts[contexts.length - 1];
+      if (latestPage !== page) {
+        try {
+          await latestPage.waitForLoadState("networkidle", { timeout: 8000 });
+          return latestPage;
+        } catch (e) {
+          // 加载超时也关闭返回 null
+          try { await latestPage.close(); } catch (ce) {}
+          try {
+            await elementLocator.evaluate((element) => { element.id = ""; });
+          } catch (ce) {}
+          return null;
+        }
+      }
+    }
+
+    // 等待新页面打开（短超时）
+    let newPage = await newPagePromise;
+    if (!newPage) {
+      // 没打开新页面，重置元素标记
+      console.log("No new page opened, resetting element");
+      try {
+        await elementLocator.evaluate((element) => {
+          element.id = "";
+        });
+      } catch (e) {
+        // 忽略清除失败
+      }
+      return null;
+    }
+
+    // 等待新页面加载完成
+    try {
+      await newPage.waitForLoadState("networkidle", { timeout: 8000 });
+      return newPage;
+    } catch (error) {
+      console.log(`New page load timeout: ${error.message}`);
+      try { await newPage.close(); } catch (closeError) {}
+      try {
+        await elementLocator.evaluate((element) => { element.id = ""; });
+      } catch (e) {}
+      return null;
+    }
+  } catch (error) {
+    // 外层兜底
+    console.log(`Unexpected error in gotoShopPage: ${error.message}`);
+    try {
+      await elementLocator.evaluate((element) => { element.id = ""; });
+    } catch (e) {}
     return null;
   }
 }
@@ -122,7 +179,7 @@ async function getReviewAndWantNumber(page) {
   const reviewNumberText = await wantElement.innerText(); // 假设这是原有行
   console.log("Review Number Text:", reviewNumberText);
 
-  // 提取“浏览”前面的文字（非贪婪匹配）
+  // 提取"浏览"前面的文字（非贪婪匹配）
   const reviewPrefixMatch = reviewNumberText.match(/(.+?)浏览/);
   let reviewNumber = 0;
   if (reviewPrefixMatch && reviewPrefixMatch[1]) {
@@ -134,7 +191,7 @@ async function getReviewAndWantNumber(page) {
     if (numMatch && numMatch[0]) {
       let num = parseFloat(numMatch[0]);
       if (prefix.includes("万")) {
-        num *= 10000; // 处理“万”单位
+        num *= 10000; // 处理"万"单位
       }
       reviewNumber = Math.round(num); // 取整，确保整数
     }
@@ -198,40 +255,137 @@ async function getImageUrls(page, is_multiple = true) {
       }
     }
 
-    return JSON.parse(mediaUrlList);
+    return mediaUrlList;
   } catch (error) {
     console.log(`Warning: Failed to get media URLs: ${error.message}`);
     return [];
   }
 }
 
+/**
+ * 翻页 - 通过点击"下一页"按钮翻页
+ * 关键：必须正确选中"下一页"按钮，而不是"上一页"或页码按钮
+ * @param {import('playwright').Page} page
+ * @returns {Promise<boolean>} 是否成功翻页
+ */
 async function gotoNextPage(page) {
   try {
-    const nextButton = page
-      .locator(".search-pagination-arrow-container--lt2kCP6J")
-      .last();
-    
-    // 检查按钮是否存在
-    const count = await nextButton.count();
-    if (count === 0) {
-      console.log("Next page button not found, skipping...");
-      return;
+    // 先尝试查找包含"下一页"文本的按钮元素
+    // 关键区别: 取最后一个 visible 的匹配元素，因为"下一页"按钮通常在分页器最右侧
+    const textSelectors = [
+      'button:has-text("下一页")',
+      ':is(button, a, span, div):has-text("下一页")',
+    ];
+
+    let nextButton = null;
+    let foundSelector = '';
+
+    for (const selector of textSelectors) {
+      try {
+        const elements = page.locator(selector);
+        const count = await elements.count();
+        if (count > 0) {
+          // 取最后一个可见的匹配元素（分页器最右边的是"下一页"）
+          for (let i = count - 1; i >= 0; i--) {
+            const el = elements.nth(i);
+            const visible = await el.isVisible().catch(() => false);
+            if (visible) {
+              nextButton = el;
+              foundSelector = selector;
+              break;
+            }
+          }
+          if (nextButton) break;
+        }
+      } catch (e) {
+        continue;
+      }
     }
-    
-    // 检查按钮是否可用（未禁用）
-    const isEnabled = await nextButton.isEnabled().catch(() => false);
-    if (!isEnabled) {
-      console.log("Next page button is disabled, skipping...");
-      return;
+
+    // 如果文本选择器没找到，尝试用 aria-label 或类名
+    if (!nextButton) {
+      const fallbackSelectors = [
+        '[aria-label="下一页"]',
+        '[class*="next"]:not([class*="prev"]):not([class*="pre"])',
+        // 分页器最后一个不是 disabled 的子元素
+        '[class*="pagination"] [class*="arrow"]:last-child:not([class*="disabled"])',
+        '[class*="pagination"] :last-child:not([class*="disabled"])',
+      ];
+
+      for (const selector of fallbackSelectors) {
+        try {
+          const element = page.locator(selector).last();
+          const visible = await element.isVisible().catch(() => false);
+          if (visible) {
+            nextButton = element;
+            foundSelector = selector;
+            break;
+          }
+        } catch (e) {
+          continue;
+        }
+      }
     }
-    
-    // 如果按钮可用，尝试点击
-    await nextButton.click({ timeout: 5000 });
+
+    if (!nextButton) {
+      console.log("⚠️ 未找到'下一页'按钮，无法翻页");
+      return false;
+    }
+
+    console.log(`✅ 找到翻页按钮 (选择器: ${foundSelector})`);
+
+    // 滚动到按钮位置
+    try {
+      await nextButton.scrollIntoViewIfNeeded({ timeout: 5000 });
+      await sleep(500);
+    } catch (e) {
+      console.log(`滚动到按钮位置失败: ${e.message}`);
+    }
+
+    // 记录翻页前的URL，翻页后检查URL是否变化以确认翻页成功
+    const beforeUrl = page.url();
+    console.log(`翻页前URL: ${beforeUrl}`);
+
+    // 点击"下一页"按钮
+    await nextButton.click({ timeout: 10000 });
+    console.log("🔄 已点击'下一页'按钮，等待页面加载...");
+
+    // 等待页面内容更新
     await sleep(5000);
+
+    // 检查URL是否变化（SPA可能会改变URL）
+    const afterUrl = page.url();
+    if (beforeUrl !== afterUrl) {
+      console.log(`翻页后URL变化: ${afterUrl}`);
+    }
+
+    // 等待新的商品卡片出现
+    try {
+      // 等待至少有一个未被标记的卡片（代表新页面内容已加载）
+      await page.waitForFunction(() => {
+        const cards = document.querySelectorAll('.feeds-item-wrap--rGdH_KoF');
+        for (const card of cards) {
+          if (card.id !== 'selected') return true;
+        }
+        return false;
+      }, { timeout: 15000 });
+      console.log("✅ 翻页成功，新内容已加载");
+      return true;
+    } catch (e) {
+      // 超时了也检查一下是否有卡片
+      await sleep(3000);
+      const cardCount = await page.locator(FIRST_CARD_CLASS_NAME).count();
+      if (cardCount > 0) {
+        console.log(`✅ 翻页成功（延迟确认），找到 ${cardCount} 个卡片`);
+        return true;
+      }
+      console.log(`⚠️ 翻页后未检测到新卡片，可能已到最后一页`);
+      return false;
+    }
+
   } catch (error) {
-    // 捕获任何错误（包括超时、元素不可用等），不抛出，继续执行
-    console.log(`Warning: Failed to go to next page: ${error.message}, continuing...`);
-    return;
+    console.log(`❌ 翻页失败: ${error.message}`);
+    return false;
   }
 }
 
