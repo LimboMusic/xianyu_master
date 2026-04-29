@@ -12,7 +12,7 @@ importers:
         specifier: ^1.11.19
         version: 1.11.19
       electron:
-        specifier: ^41.3.0
+        specifier: 41.3.0
         version: 41.3.0
       electron-store:
         specifier: ^11.0.2

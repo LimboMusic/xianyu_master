@@ -262,37 +262,62 @@ async function getImageUrls(page, is_multiple = true) {
   }
 }
 
+/**
+ * 翻页 - 通过点击"下一页"按钮翻页
+ * 关键：必须正确选中"下一页"按钮，而不是"上一页"或页码按钮
+ * @param {import('playwright').Page} page
+ * @returns {Promise<boolean>} 是否成功翻页
+ */
 async function gotoNextPage(page) {
   try {
-    // 尝试多种选择器匹配翻页按钮（闲鱼 hash 类名可能变化）
-    const selectors = [
-      // 尝试包含 hash 的精确类名
-      ".search-pagination-arrow-container--lt2kCP6J",
-      // 尝试包含"下一页"文本的按钮
+    // 先尝试查找包含"下一页"文本的按钮元素
+    // 关键区别: 取最后一个 visible 的匹配元素，因为"下一页"按钮通常在分页器最右侧
+    const textSelectors = [
       'button:has-text("下一页")',
-      // 尝试 aria-label 属性
-      '[aria-label="下一页"]',
-      // 尝试通用分页器箭头容器（部分匹配）
-      '[class*="pagination-arrow"]',
-      '[class*="pagination"] .next',
-      // 尝试 span 文本
-      'span:has-text("下一页")',
-      // 通用包含"下一页"的链接/按钮
-      'a:has-text("下一页")',
-      // 最后手段：分页按钮区域最后一个非禁用按钮
-      '[class*="pagination"] button:not([disabled]):last-child',
+      ':is(button, a, span, div):has-text("下一页")',
     ];
 
     let nextButton = null;
     let foundSelector = '';
-    for (const selector of selectors) {
-      const elements = page.locator(selector);
-      const count = await elements.count().catch(() => 0);
-      if (count > 0) {
+
+    for (const selector of textSelectors) {
+      try {
+        const elements = page.locator(selector);
+        const count = await elements.count();
+        if (count > 0) {
+          // 取最后一个可见的匹配元素（分页器最右边的是"下一页"）
+          for (let i = count - 1; i >= 0; i--) {
+            const el = elements.nth(i);
+            const visible = await el.isVisible().catch(() => false);
+            if (visible) {
+              nextButton = el;
+              foundSelector = selector;
+              break;
+            }
+          }
+          if (nextButton) break;
+        }
+      } catch (e) {
+        continue;
+      }
+    }
+
+    // 如果文本选择器没找到，尝试用 aria-label 或类名
+    if (!nextButton) {
+      const fallbackSelectors = [
+        '[aria-label="下一页"]',
+        '[class*="next"]:not([class*="prev"]):not([class*="pre"])',
+        // 分页器最后一个不是 disabled 的子元素
+        '[class*="pagination"] [class*="arrow"]:last-child:not([class*="disabled"])',
+        '[class*="pagination"] :last-child:not([class*="disabled"])',
+      ];
+
+      for (const selector of fallbackSelectors) {
         try {
-          const isEnabled = await elements.first().isEnabled().catch(() => false);
-          if (isEnabled) {
-            nextButton = elements.first();
+          const element = page.locator(selector).last();
+          const visible = await element.isVisible().catch(() => false);
+          if (visible) {
+            nextButton = element;
             foundSelector = selector;
             break;
           }
@@ -303,42 +328,64 @@ async function gotoNextPage(page) {
     }
 
     if (!nextButton) {
-      console.log("Next page button not found with any selector, skipping...");
-      return;
+      console.log("⚠️ 未找到'下一页'按钮，无法翻页");
+      return false;
     }
 
-    console.log(`Found next page button with selector: ${foundSelector}`);
-    
-    // 滚动到分页区域
+    console.log(`✅ 找到翻页按钮 (选择器: ${foundSelector})`);
+
+    // 滚动到按钮位置
     try {
-      await nextButton.scrollIntoViewIfNeeded({ timeout: 3000 });
+      await nextButton.scrollIntoViewIfNeeded({ timeout: 5000 });
+      await sleep(500);
     } catch (e) {
-      // 忽略滚动失败
+      console.log(`滚动到按钮位置失败: ${e.message}`);
     }
-    await sleep(500);
-    
+
+    // 记录翻页前的URL，翻页后检查URL是否变化以确认翻页成功
+    const beforeUrl = page.url();
+    console.log(`翻页前URL: ${beforeUrl}`);
+
+    // 点击"下一页"按钮
     await nextButton.click({ timeout: 10000 });
-    console.log("Clicked next page button, waiting for page load...");
-    await sleep(3000);
-    
-    // 等待新页面内容加载
+    console.log("🔄 已点击'下一页'按钮，等待页面加载...");
+
+    // 等待页面内容更新
+    await sleep(5000);
+
+    // 检查URL是否变化（SPA可能会改变URL）
+    const afterUrl = page.url();
+    if (beforeUrl !== afterUrl) {
+      console.log(`翻页后URL变化: ${afterUrl}`);
+    }
+
+    // 等待新的商品卡片出现
     try {
+      // 等待至少有一个未被标记的卡片（代表新页面内容已加载）
       await page.waitForFunction(() => {
         const cards = document.querySelectorAll('.feeds-item-wrap--rGdH_KoF');
         for (const card of cards) {
           if (card.id !== 'selected') return true;
         }
         return false;
-      }, { timeout: 10000 });
-      console.log("New page content loaded");
+      }, { timeout: 15000 });
+      console.log("✅ 翻页成功，新内容已加载");
+      return true;
     } catch (e) {
-      console.log("Wait for new cards completed (or timeout)");
+      // 超时了也检查一下是否有卡片
+      await sleep(3000);
+      const cardCount = await page.locator(FIRST_CARD_CLASS_NAME).count();
+      if (cardCount > 0) {
+        console.log(`✅ 翻页成功（延迟确认），找到 ${cardCount} 个卡片`);
+        return true;
+      }
+      console.log(`⚠️ 翻页后未检测到新卡片，可能已到最后一页`);
+      return false;
     }
-    
+
   } catch (error) {
-    // 捕获任何错误，不抛出，继续执行
-    console.log(`Warning: Failed to go to next page: ${error.message}, continuing...`);
-    return;
+    console.log(`❌ 翻页失败: ${error.message}`);
+    return false;
   }
 }
 

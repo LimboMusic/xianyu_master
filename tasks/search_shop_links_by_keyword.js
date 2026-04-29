@@ -132,7 +132,7 @@ async function getShopLinks(url, keyword) {
       // 获取最新 page 引用（ensurePageValid 可能重建了 page）
       page = getPage();
       if (!page) {
-        console.log("Page is null, attempting to recreate...");
+        console.log("Page is null, attempting to recreate with initial URL...");
         await browser.ensurePageValid(url);
         page = getPage();
         if (!page) {
@@ -142,7 +142,9 @@ async function getShopLinks(url, keyword) {
       }
 
       // 检查页面是否仍然有效，如果无效则重新创建
-      await browser.ensurePageValid(url);
+      // 【关键修复】必须传当前页URL！如果传固定第1页URL会导致翻页后被拉回第1页
+      const currentUrl = page.url();
+      await browser.ensurePageValid(currentUrl);
       page = getPage(); // 重新获取 page 引用
       await sleep(1000);
 
@@ -267,6 +269,27 @@ async function getShopLinks(url, keyword) {
           .locator('.feeds-item-wrap--rGdH_KoF:not([id="selected"])')
           .count();
         console.log(`Remaining count: ${count}, Processed: ${processedCount}`);
+
+        // 【关键修复】如果当前页没有更多元素了，立刻尝试翻到下一页
+        // 这里必须在 while 循环底部处理翻页，否则 count=0 时 while 条件 count>=1 不成立会直接退出循环，
+        // 导致循环顶部处理 count===0 的翻页逻辑永远不会被执行
+        if (count === 0) {
+          console.log("No more unprocessed elements on current page, trying next page...");
+          await gotoNextPage(page);
+          await sleep(5000);
+          count = await page
+            .locator('.feeds-item-wrap--rGdH_KoF:not([id="selected"])')
+            .count();
+          if (count === 0) {
+            console.log("No new elements found after page turn, exiting loop");
+            break;
+          }
+          console.log(`Found ${count} elements on next page, continuing...`);
+          stuckRetryCount = 0;
+          // 翻页后继续下一次循环，不要走下面的定期保存逻辑
+          await sleep(800);
+          continue;
+        }
 
         // 定期保存进度
         if (result_list.length > 0 && result_list.length % 10 === 0) {
