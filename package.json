@@ -1,11 +1,13 @@
 {
-  "name": "automation-script",
-  "version": "1.0.0",
-  "description": "Automation script for virtual data project",
-  "main": "index.js",
+  "name": "xianyu-master",
+  "version": "2.0.0",
+  "description": "闲鱼自动化助手 - 桌面应用",
+  "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node menu.js"
+    "start": "node menu.js",
+    "electron": "electron .",
+    "dev": "electron ."
   },
   "keywords": [],
   "author": "",
@@ -13,7 +15,10 @@
   "type": "module",
   "dependencies": {
     "dayjs": "^1.11.19",
+    "electron": "^41.3.0",
+    "electron-store": "^11.0.2",
     "inquirer": "^13.0.2",
+    "node-cron": "^4.2.1",
     "playwright": "^1.57.0",
     "sharp": "^0.34.5",
     "xlsx": "^0.18.5"
